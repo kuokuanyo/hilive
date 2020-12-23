@@ -85,6 +85,9 @@ type Config struct {
 	// Menu delete url
 	MenuDeleteURL string `json:"menu_delete_URL,omitempty" yaml:"menu_delete_URL,omitempty" ini:"menu_delete_URL,omitempty"`
 
+	// ManagerURL manager url
+	ManagerURL string `json:"manager_URL,omitempty" yaml:"manager_URL,omitempty" ini:"manager_URL,omitempty"`
+
 	// Assets visit link.
 	AssetURL string `json:"asset_url,omitempty" yaml:"asset_url,omitempty" ini:"asset_url,omitempty"`
 
@@ -130,7 +133,7 @@ func SetGlobalConfig(cfg Config) *Config {
 	} else if cfg.URLPrefix[0] != '/' {
 		cfg.prefix = "/" + cfg.URLPrefix
 	} else {
-		cfg.prefix = cfg.URLPrefix 
+		cfg.prefix = cfg.URLPrefix
 	}
 
 	globalCfg = &cfg
@@ -152,6 +155,7 @@ func SetDefault(cfg Config) Config {
 	cfg.MenuEditURL = utils.SetDefault(cfg.MenuEditURL, "", "/menu/edit")
 	cfg.MenuDeleteURL = utils.SetDefault(cfg.MenuDeleteURL, "", "/menu/delete")
 	cfg.MenuNewURL = utils.SetDefault(cfg.MenuNewURL, "", "/menu/new")
+	cfg.ManagerURL = utils.SetDefault(cfg.ManagerURL, "", "/info/manager")
 
 	// cookie時效
 	if cfg.SessionLifeTime == 0 {
@@ -205,6 +209,7 @@ func (c *Config) ToMap() map[string]string {
 	m["menu_edit_url"] = c.MenuEditURL
 	m["menu_delete_url"] = c.MenuDeleteURL
 	m["menu_new_url"] = c.MenuNewURL
+	m["manager_url"] = c.ManagerURL
 	m["store"] = c.Store.JSON()
 	return m
 }

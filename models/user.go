@@ -13,12 +13,12 @@ type UserModel struct {
 	Base `json:"-"`
 
 	ID          int64             `json:"id"`
-	UserID      string            `json:"UserID"`
+	UserID      string            `json:"userid"`
 	UserName    string            `json:"user_name"`
 	Phone       string            `json:"phone"`
 	Email       string            `json:"email"`
 	Password    string            `json:"password"`
-	PictureURL  string            `json:"PictureURL"`
+	Picture     string            `json:"Picture"`
 	Permissions []PermissionModel `json:"permissions"`
 	MenuIDs     []int64           `json:"menu_ids"`
 	Roles       []RoleModel       `json:"role"`
@@ -118,7 +118,7 @@ func (user UserModel) MapToUserModel(m map[string]interface{}) UserModel {
 	user.Phone, _ = m["phone"].(string)
 	user.Email, _ = m["email"].(string)
 	user.Password, _ = m["password"].(string)
-	user.PictureURL, _ = m["picture"].(string)
+	user.Picture, _ = m["picture"].(string)
 	user.CreatedAt, _ = m["created_at"].(string)
 	user.UpdatedAt, _ = m["updated_at"].(string)
 	return user
@@ -238,6 +238,15 @@ func (user UserModel) UpdatePassword(password string) UserModel {
 		})
 	user.Password = password
 	return user
+}
+
+// GetCheckPermissionByURLMethod 檢查用戶權限，如果沒有權限回傳""
+func (user UserModel) GetCheckPermissionByURLMethod(path, method string) string {
+	// 檢查權限
+	if !user.CheckPermissionByURLMethod(path, method, url.Values{}) {
+		return ""
+	}
+	return path
 }
 
 // CheckPermissionByURLMethod 透過url、method判斷用戶是否有權限訪問該頁面

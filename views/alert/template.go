@@ -60,20 +60,20 @@ const AlertTmpl = `
 								</li>
 								<li class="dropdown user user-menu">
 									<a href="#" class="dropdown-toggle" data-toggle="dropdown">
-										{{if eq .User.PictureURL ""}}
+										{{if eq .User.Picture ""}}
 											<img src="/admin/assets/dist/img/avatar04.png" class="user-image" alt="User Image">
 										{{else}}
-											<img src="{{.User.PictureURL}}" class="user-image" alt="User Image">
+											<img src="{{.User.Picture}}" class="user-image" alt="User Image">
 										{{end}}
 										<span class="hidden-xs">{{.User.UserName}}</span>
 									</a>
 									<ul class="dropdown-menu">
 										<li class="user-header">
-											{{if eq .User.PictureURL ""}}
+											{{if eq .User.Picture ""}}
 												<img src="/admin/assets/dist/img/avatar04.png" class="img-circle"
 													alt="User Image">
 											{{else}}
-												<img src="{{.User.PictureURL}}" class="img-circle" alt="User Image">
+												<img src="{{.User.Picture}}" class="img-circle" alt="User Image">
 											{{end}}
 											<p>
 												{{.User.UserName}} -{{.User.LevelName}}

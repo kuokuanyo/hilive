@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"hilive/modules/config"
 	"hilive/modules/service"
 )
@@ -19,6 +20,9 @@ type Connection interface {
 
 	// 執行
 	Exec(query string, args ...interface{}) (sql.Result, error)
+
+	// 取得Tx
+	GetTx() *sql.Tx
 }
 
 // GetConnectionFromService 透過資料庫引擎從Service取得Connection(interface)
@@ -46,4 +50,14 @@ func ConvertServiceToConnection(s interface{}) Connection {
 		return c
 	}
 	panic("Service轉換Connection失敗")
+}
+
+// GetAggregationExpression 判斷資料庫引擎取得聚合表達式
+func GetAggregationExpression(driver, field, headField, delimiter string) string {
+	switch driver {
+	case "mysql":
+		return fmt.Sprintf("group_concat(%s separator '%s') as %s", field, delimiter, headField)
+	default:
+		panic("取得聚合表達式發生錯誤")
+	}
 }

@@ -1,3 +1,5 @@
+package menuviews
+
 // MenuTmpl 菜單模板
 const MenuTmpl = `
 <html>
@@ -63,20 +65,20 @@ const MenuTmpl = `
 								</li>
 								<li class="dropdown user user-menu">
 									<a href="#" class="dropdown-toggle" data-toggle="dropdown">
-										{{if eq .User.PictureURL ""}}
+										{{if eq .User.Picture ""}}
 											<img src="/admin/assets/dist/img/avatar04.png" class="user-image" alt="User Image">
 										{{else}}
-											<img src="{{.User.PictureURL}}" class="user-image" alt="User Image">
+											<img src="{{.User.Picture}}" class="user-image" alt="User Image">
 										{{end}}
 										<span class="hidden-xs">{{.User.UserName}}</span>
 									</a>
 									<ul class="dropdown-menu">
 										<li class="user-header">
-											{{if eq .User.PictureURL ""}}
+											{{if eq .User.Picture ""}}
 												<img src="/admin/assets/dist/img/avatar04.png" class="img-circle"
 													alt="User Image">
 											{{else}}
-												<img src="{{.User.PictureURL}}" class="img-circle" alt="User Image">
+												<img src="{{.User.Picture}}" class="img-circle" alt="User Image">
 											{{end}}
 											<p>
 												{{.User.UserName}} -{{.User.LevelName}}
@@ -183,11 +185,11 @@ const MenuTmpl = `
 				</section>
 				<section class="content">
 					<div>
-						{{if ne .AlertContent ""}}
+						{{if ne .Alert ""}}
 							<div class="alert alert-warning alert-dismissible">
 							<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
 							<h4>錯誤</h4>
-							{{ .AlertContent}}
+							{{ .Alert}}
 							</div>
 						{{end}}
 						<div class="row">
@@ -351,8 +353,6 @@ const MenuTmpl = `
 														$('.dd').nestable('collapseAll');
 													}
 												});
-												$(".parent_id").select2({"allowClear": true, "placeholder": "Parent"});
-												$(".roles").select2({"allowClear": true, "placeholder": "Roles"});
 											});
 										</script>
 									</div>
@@ -455,8 +455,8 @@ const MenuTmpl = `
 													</div>
 												</div>
 											</div>
-											<input type="hidden" name="__previous_" value={{.Previous}}>
-											<input type="hidden" name="__token_" value={{.Token}}>
+											<input type="hidden" name="__previous_" value="{{.Previous}}">
+											<input type="hidden" name="__token_" value="{{.Token}}">
 										</form>
 									</div>
 								</div>

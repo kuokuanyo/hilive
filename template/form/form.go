@@ -194,6 +194,16 @@ func (t Type) SelectedLabel() []template.HTML {
 	return []template.HTML{"", ""}
 }
 
+// IsRange 是否值為範圍
+func (t Type) IsRange() bool {
+	return t == DatetimeRange || t == NumberRange
+}
+
+// IsMultiSelect 是否有多個選擇
+func (t Type) IsMultiSelect() bool {
+	return t == Select || t == SelectBox || t == Checkbox || t == CheckboxStacked
+}
+
 // String 將type轉換成string
 func (t Type) String() string {
 	switch t {

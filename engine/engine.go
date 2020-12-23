@@ -2,6 +2,7 @@ package engine
 
 import (
 	"hilive/controller"
+	"hilive/guard"
 	"hilive/models"
 	"hilive/modules/auth"
 	"hilive/modules/config"
@@ -27,6 +28,7 @@ type Engine struct {
 	Services service.List // 儲存資料庫引擎、Config(struct)
 	Gin      *gin.Engine
 	handler  controller.Handler
+	guard    guard.Guard
 }
 
 // DefaultEngine 預設Engine(struct)
@@ -49,15 +51,22 @@ func (eng *Engine) InitDatabase(cfg config.Config) *Engine {
 
 	// 增加token的service
 	eng.Services.Add("token_csrf_helper", &auth.TokenService{
-			Tokens: make(auth.CSRFToken, 0),
-		})
+		Tokens: make(auth.CSRFToken, 0),
+	})
 
 	eng.handler = controller.Handler{
-		Config: eng.config,
-		Conn:   eng.GetConnectionByDriver(),
-		Gin:    r,
+		Config:   eng.config,
+		Conn:     eng.GetConnectionByDriver(),
+		Gin:      r,
 		Services: eng.Services,
 	}
+
+	eng.guard = guard.Guard{
+		Conn:     eng.GetConnectionByDriver(),
+		Services: eng.Services,
+		Config:   eng.config,
+	}
+
 	// 設置TableName、Conn
 	// GetConnectionByDriver 透過資料庫引擎轉換Connection(interface)
 	site := models.DefaultSiteModel().SetConn(eng.GetConnectionByDriver())
@@ -101,9 +110,17 @@ func (eng *Engine) InitRouter() *Engine {
 	router.POST(eng.config.SignupURL, eng.handler.Signup)
 
 	authRoute := router.Use(auth.DefaultInvoker(eng.handler.Conn).Middleware(eng.handler.Conn))
+	// 菜單
 	authRoute.GET(eng.config.MenuURL, eng.handler.ShowMenu)
 	authRoute.GET(eng.config.MenuNewURL, eng.handler.ShowNewMenu)
 	authRoute.GET(eng.config.MenuEditURL, eng.handler.ShowEditMenu)
+	authRoute.POST(eng.config.MenuNewURL, eng.guard.MenuNew, eng.handler.NewMenu)
+	authRoute.POST(eng.config.MenuEditURL, eng.guard.MenuEdit, eng.handler.EditMenu)
+	authRoute.POST(eng.config.MenuDeleteURL, eng.guard.MenuDelete, eng.handler.DeleteMenu)
+
+	// 使用者
+	authRoute.GET(eng.config.ManagerURL, eng.handler.ShowManegerInfo)
+
 
 	return eng
 }

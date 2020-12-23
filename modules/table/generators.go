@@ -1,13 +1,92 @@
 package table
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"hilive/modules/config"
 	"hilive/modules/db"
 	"hilive/template/form"
 	"hilive/template/types"
 	"html/template"
 	"strconv"
+	"strings"
 )
+
+// GetManagerInfoPanel 取得使用者資訊面板
+func GetManagerInfoPanel(conn db.Connection) (managerTable Table) {
+	// 建立BaseTable
+	managerTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
+
+	info := managerTable.GetInfo()
+	info.AddField("ID", "id", "INT").FieldSortable()
+	info.AddField("用戶ID", "userid", db.Varchar).FieldFilterable()
+	info.AddField("用戶名稱", "username", db.Varchar).FieldFilterable()
+	info.AddField("電話", "phone", db.Varchar).FieldFilterable()
+	info.AddField("信箱", "email", db.Varchar).FieldFilterable()
+	info.AddField("角色", "name", db.Varchar).FieldJoin(types.Join{
+		JoinTable: "role_users",
+		JoinField: "user_id",
+		Field:     "id",
+		BaseTable: "users",
+	}).FieldJoin(types.Join{
+		JoinTable: "roles",
+		JoinField: "id",
+		Field:     "role_id",
+		BaseTable: "role_users",
+	}).FieldDisplayFunc(func(model types.FieldModel) interface{} {
+		labels := template.HTML("")
+		labelValues := strings.Split(model.Value, types.JoinFieldValueDelimiter)
+
+		for key, label := range labelValues {
+			if key == len(labelValues)-1 {
+				labels += template.HTML(fmt.Sprintf(`<span class="label label-success" style="background-color: ;">%s</span>`, label))
+			} else {
+				labels += template.HTML(fmt.Sprintf(`<span class="label label-success" style="background-color: ;">%s</span>`, label) + "<br><br>")
+			}
+		}
+		if labels == template.HTML("") {
+			return "沒有角色"
+		}
+		return labels
+	}).FieldFilterable()
+	info.AddField("用戶照片", "picture", db.Varchar)
+	info.AddField("建立時間", "created_at", db.Timestamp)
+	info.AddField("更新時間", "updated_at", db.Timestamp)
+
+	info.SetTable("users").SetTitle("用戶").SetDescription("用戶管理").
+		SetDeleteFunc(func(idArr []string) error {
+			var ids = interfaces(idArr)
+
+			_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+				err := db.SetConnectionAndCRUD(conn).WithTx(tx).
+					Table("role_users").WhereIn("user_id", ids).Delete()
+				if err != nil {
+					if err.Error() != "沒有影響任何資料" {
+						return errors.New("刪除role_users資料表角色發生錯誤"), nil
+					}
+				}
+				err = db.SetConnectionAndCRUD(conn).WithTx(tx).
+					Table("user_permissions").WhereIn("user_id", ids).Delete()
+				if err != nil {
+					if err.Error() != "沒有影響任何資料" {
+						return errors.New("刪除user_permissions資料表權限發生錯誤"), nil
+					}
+				}
+				err = db.SetConnectionAndCRUD(conn).WithTx(tx).
+					Table("users").WhereIn("id", ids).Delete()
+				if err != nil {
+					if err.Error() != "沒有影響任何資料" {
+						return errors.New("刪除users資料表用戶發生錯誤"), nil
+					}
+				}
+				return nil, nil
+			})
+			return txErr
+		})
+
+	return managerTable
+}
 
 // GetMenuFormPanel 取得menu表單面板資訊
 func GetMenuFormPanel(conn db.Connection) (menuTable Table) {
@@ -61,7 +140,7 @@ func GetMenuFormPanel(conn db.Connection) (menuTable Table) {
 
 	// 取得types.FormPanel
 	formList := menuTable.GetFormPanel()
-	formList.AddField("ID", "id", db.Int, form.Text).FieldNotAllowEdit().FieldNotAllowAdd()
+	formList.AddField("ID", "id", db.Int, form.Default).FieldNotAllowEdit().FieldNotAllowAdd()
 	formList.AddField("父級菜單", "parent_id", db.Int, form.Text).
 		// SetFieldOptions 設置Field.FieldOptions
 		// SetDisplayFunc 設置欄位過濾函式至DisplayFunc
@@ -101,4 +180,13 @@ func GetMenuFormPanel(conn db.Connection) (menuTable Table) {
 	formList.AddField("建立時間", "created_at", db.Timestamp, form.Default).FieldNotAllowAdd()
 	formList.SetTable("menu").SetTitle("菜單").SetDescription("菜單處理")
 	return
+}
+
+// interfaces 將[]string轉換成[]interface{}
+func interfaces(arr []string) []interface{} {
+	var iarr = make([]interface{}, len(arr))
+	for key, v := range arr {
+		iarr[key] = v
+	}
+	return iarr
 }

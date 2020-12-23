@@ -19,8 +19,9 @@ type Item struct {
 
 // Menu 紀錄menu表資訊
 type Menu struct {
-	List    []Item
-	Options []map[string]string // 紀錄menu的title、ID
+	List     []Item
+	Options  []map[string]string // 紀錄menu的title、ID
+	MaxOrder int64
 }
 
 // GetMenuInformation 透過user取得menu資料表資訊
@@ -55,8 +56,9 @@ func GetMenuInformation(user models.UserModel, conn db.Connection) *Menu {
 	// 將map轉換成Item，第二個參數設為0是因為只取沒有子選單的menu，並將子選單放置ChildrenList
 	menuList := MapConvertToMenuItem(menus, 0)
 	return &Menu{
-		List:    menuList,
-		Options: menuOption,
+		List:     menuList,
+		Options:  menuOption,
+		MaxOrder: menus[len(menus)-1]["parent_id"].(int64),
 	}
 }
 

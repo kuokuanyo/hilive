@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"hilive/modules/config"
@@ -60,6 +61,11 @@ func (db *Mysql) Query(query string, args ...interface{}) ([]map[string]interfac
 // Exec 執行sql命令
 func (db *Mysql) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return CommonExec(db.DB, query, args...)
+}
+
+// GetTx 取得Tx
+func (db *Mysql) GetTx() *sql.Tx {
+	return CommonBeginTxWithLevel(db.Base.DB, sql.LevelDefault)
 }
 
 // -----Connection的所有方法-----end
@@ -131,4 +137,13 @@ func CommonExec(db *sql.DB, query string, args ...interface{}) (sql.Result, erro
 		return nil, errors.New("執行資料庫命令發生錯誤")
 	}
 	return rs, nil
+}
+
+// CommonBeginTxWithLevel 透過LevelDefault and db取得Tx(struct)
+func CommonBeginTxWithLevel(db *sql.DB, level sql.IsolationLevel) *sql.Tx {
+	tx, err := db.BeginTx(context.Background(), &sql.TxOptions{Isolation: level})
+	if err != nil {
+		panic(err)
+	}
+	return tx
 }

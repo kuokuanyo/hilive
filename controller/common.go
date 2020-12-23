@@ -11,9 +11,9 @@ import (
 
 // Handler struct
 type Handler struct {
-	Config *config.Config
-	Conn   db.Connection
-	Gin    *gin.Engine
+	Config   *config.Config
+	Conn     db.Connection
+	Gin      *gin.Engine
 	Services service.List
 }
 

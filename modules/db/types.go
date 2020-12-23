@@ -268,3 +268,8 @@ func GetValueFromDatabaseType(typ DatabaseType, value interface{}) Value {
 	}
 	panic("錯誤databasetype?" + string(typ))
 }
+
+// String return the string value.
+func (v Value) String() string {
+	return string(v)
+}

@@ -20,6 +20,14 @@ type TokenService struct {
 	lock   sync.Mutex
 }
 
+// GetTokenServiceByService 藉由Service取得TokenService
+func GetTokenServiceByService(s interface{}) *TokenService {
+	if srv, ok := s.(*TokenService); ok {
+		return srv
+	}
+	panic("錯誤的Service")
+}
+
 // CSRFToken的Service方法-----start
 
 // Name Service方法
@@ -67,6 +75,17 @@ func Check(password string, phone string, conn db.Connection) (user models.UserM
 		}
 	}
 	return
+}
+
+// CheckToken 檢查是否存在token
+func (s *TokenService) CheckToken(CheckToken string) bool {
+	for i := 0; i < len(s.Tokens); i++ {
+		if s.Tokens[i] == CheckToken {
+			s.Tokens = append((s.Tokens)[:i], (s.Tokens)[i+1:]...)
+			return true
+		}
+	}
+	return false
 }
 
 // SetCookie 設置cookie並加入header

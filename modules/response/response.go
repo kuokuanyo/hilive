@@ -10,8 +10,16 @@ import (
 func OkWithData(ctx *gin.Context, data map[string]interface{}) {
 	ctx.JSON(http.StatusOK, map[string]interface{}{
 		"code": http.StatusOK,
-		"msg": "ok",
+		"msg":  "ok",
 		"data": data,
+	})
+}
+
+// OkWithMsg 回成功以及msg
+func OkWithMsg(ctx *gin.Context, msg string) {
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"code": http.StatusOK,
+		"msg":  msg,
 	})
 }
 
@@ -19,7 +27,6 @@ func OkWithData(ctx *gin.Context, data map[string]interface{}) {
 func BadRequest(ctx *gin.Context, msg string) {
 	ctx.JSON(http.StatusBadRequest, map[string]interface{}{
 		"code": http.StatusBadRequest,
-		"msg": msg,
+		"msg":  msg,
 	})
 }
-

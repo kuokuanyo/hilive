@@ -1,12 +1,16 @@
 package db
 
 import (
+	dbsql "database/sql"
 	"errors"
 	"hilive/modules/db/sql"
 	"regexp"
 	"strings"
 	"sync"
 )
+
+// TxFn is the transaction callback function.
+type TxFn func(tx *dbsql.Tx) (error, map[string]interface{})
 
 // SQLPool 降低內存負擔，用於需要被重複分配、回收內存的地方
 var SQLPool = sync.Pool{
@@ -40,6 +44,7 @@ type SQL struct {
 	sql.FilterCondition // sql過濾條件
 	conn                Connection
 	crud                sql.CRUD // CRUD方法
+	tx                  *dbsql.Tx
 }
 
 // Table 設置SQL(struct)
@@ -269,4 +274,32 @@ func (s *SQL) clean() {
 	s.FilterCondition.WhereRaws = ""
 	s.FilterCondition.UpdateRaws = make([]sql.RawUpdate, 0)
 	s.FilterCondition.Statement = ""
+}
+
+// WithTx 設置至SQL.tx
+func (s *SQL) WithTx(tx *dbsql.Tx) *SQL {
+	s.tx = tx
+	return s
+}
+
+// WithTransaction 取得Tx，持續並行commit、rollback
+func (s *SQL) WithTransaction(fn TxFn) (res map[string]interface{}, err error) {
+	// 取得Tx
+	tx := s.conn.GetTx()
+
+	defer func() {
+		if p := recover(); p != nil {
+			// a panic occurred, rollback and repanic
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			// something went wrong, rollback
+			_ = tx.Rollback()
+		} else {
+			// all good, commit
+			err = tx.Commit()
+		}
+	}()
+	err, res = fn(tx)
+	return
 }
