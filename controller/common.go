@@ -17,6 +17,18 @@ type Handler struct {
 	Services service.List
 }
 
+// URLRoute 模板需要使用的URL路徑
+type URLRoute struct {
+	URLPrefix   string
+	IndexURL    string
+	InfoURL     string
+	NewURL      string
+	EditURL     string
+	DeleteURL   string
+	SortURL     string
+	PreviousURL string
+}
+
 // DefaultFuncMap 模板需要使用的函式
 var DefaultFuncMap = template.FuncMap{
 	"link": func(cdnUrl, prefixUrl, assetsUrl string) string {

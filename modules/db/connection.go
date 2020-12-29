@@ -23,6 +23,12 @@ type Connection interface {
 
 	// 取得Tx
 	GetTx() *sql.Tx
+
+	// QueryWithTx 利用tx查詢資料
+	QueryWithTx(tx *sql.Tx, query string, args ...interface{}) ([]map[string]interface{}, error)
+
+	// ExecWithTx 利用tx執行命令
+	ExecWithTx(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error)
 }
 
 // GetConnectionFromService 透過資料庫引擎從Service取得Connection(interface)

@@ -93,11 +93,19 @@ func (s *SQL) ShowColumns() ([]map[string]interface{}, error) {
 // Insert 插入資料後回傳插入值的id
 func (s *SQL) Insert(values sql.Value) (int64, error) {
 	defer RecycleSQL(s)
+	var (
+		res dbsql.Result
+		err error
+	)
 
 	s.FilterCondition.Values = values
 	s.crud.Insert(&s.FilterCondition)
 
-	res, err := s.conn.Exec(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	if s.tx != nil {
+		res, err = s.conn.ExecWithTx(s.tx, s.FilterCondition.Statement, s.FilterCondition.Args...)
+	} else {
+		res, err = s.conn.Exec(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -110,11 +118,19 @@ func (s *SQL) Insert(values sql.Value) (int64, error) {
 // Update 執行更新命令
 func (s *SQL) Update(values sql.Value) (int64, error) {
 	defer RecycleSQL(s)
+	var (
+		res dbsql.Result
+		err error
+	)
 
 	s.FilterCondition.Values = values
 	s.crud.Update(&s.FilterCondition)
 
-	res, err := s.conn.Exec(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	if s.tx != nil {
+		res, err = s.conn.ExecWithTx(s.tx, s.FilterCondition.Statement, s.FilterCondition.Args...)
+	} else {
+		res, err = s.conn.Exec(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -127,9 +143,18 @@ func (s *SQL) Update(values sql.Value) (int64, error) {
 // Delete 刪除資料
 func (s *SQL) Delete() error {
 	defer RecycleSQL(s)
+	var (
+		res dbsql.Result
+		err error
+	)
+
 	s.crud.Delete(&s.FilterCondition)
 
-	res, err := s.conn.Exec(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	if s.tx != nil {
+		res, err = s.conn.ExecWithTx(s.tx, s.FilterCondition.Statement, s.FilterCondition.Args...)
+	} else {
+		res, err = s.conn.Exec(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	}
 	if err != nil {
 		return errors.New("刪除資料發生錯誤")
 	}
@@ -145,6 +170,9 @@ func (s *SQL) All() ([]map[string]interface{}, error) {
 	// 取得所有資料
 	s.crud.Select(&s.FilterCondition)
 
+	if s.tx != nil {
+		return s.conn.QueryWithTx(s.tx, s.FilterCondition.Statement, s.FilterCondition.Args...)
+	}
 	return s.conn.Query(s.FilterCondition.Statement, s.FilterCondition.Args...)
 }
 
@@ -157,20 +185,28 @@ func (s *SQL) FindByID(arg interface{}) (map[string]interface{}, error) {
 func (s *SQL) First() (map[string]interface{}, error) {
 	// 執行結束後清空
 	defer RecycleSQL(s)
+	var (
+		res []map[string]interface{}
+		err error
+	)
 
 	// 取得所有資料
 	s.crud.Select(&s.FilterCondition)
 
 	// 查詢
-	results, err := s.conn.Query(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	if s.tx != nil {
+		res, err = s.conn.QueryWithTx(s.tx, s.FilterCondition.Statement, s.FilterCondition.Args...)
+	} else {
+		res, err = s.conn.Query(s.FilterCondition.Statement, s.FilterCondition.Args...)
+	}
 	if err != nil {
 		return nil, errors.New("查詢資料發生錯誤")
 	}
-	if len(results) < 1 {
+	if len(res) < 1 {
 		return nil, errors.New("查無此資料")
 	}
 
-	return results[0], nil
+	return res[0], nil
 }
 
 // Select 處理欄位
@@ -276,8 +312,8 @@ func (s *SQL) clean() {
 	s.FilterCondition.Statement = ""
 }
 
-// WithTx 設置至SQL.tx
-func (s *SQL) WithTx(tx *dbsql.Tx) *SQL {
+// SetTx 設置至SQL.tx
+func (s *SQL) SetTx(tx *dbsql.Tx) *SQL {
 	s.tx = tx
 	return s
 }

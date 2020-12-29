@@ -47,7 +47,7 @@ func (g *Guard) MenuNew(ctx *gin.Context) {
 		ParentID: int64(parentIDInt),
 		Icon:     ctx.Request.FormValue("icon"),
 		URL:      ctx.Request.FormValue("url"),
-		Roles:    ctx.Request.Form["roles"],
+		Roles:    ctx.Request.Form["roles[]"],
 		Alert:    alert,
 	}
 	ctx.Next()

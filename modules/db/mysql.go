@@ -68,6 +68,16 @@ func (db *Mysql) GetTx() *sql.Tx {
 	return CommonBeginTxWithLevel(db.Base.DB, sql.LevelDefault)
 }
 
+// QueryWithTx 利用tx查詢資料
+func (db *Mysql) QueryWithTx(tx *sql.Tx, query string, args ...interface{}) ([]map[string]interface{}, error) {
+	return CommonQueryWithTx(tx, query, args...)
+}
+
+// ExecWithTx 利用tx執行命令
+func (db *Mysql) ExecWithTx(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
+	return CommonExecWithTx(tx, query, args...)
+}
+
 // -----Connection的所有方法-----end
 
 // CommonQuery 查詢資料
@@ -146,4 +156,73 @@ func CommonBeginTxWithLevel(db *sql.DB, level sql.IsolationLevel) *sql.Tx {
 		panic(err)
 	}
 	return tx
+}
+
+// CommonExecWithTx 與CommonExec一樣(差別在tx執行)
+func CommonExecWithTx(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
+	rs, err := tx.Exec(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return rs, nil
+}
+
+// CommonQueryWithTx 與CommonQuery一樣(差別在tx執行)
+func CommonQueryWithTx(tx *sql.Tx, query string, args ...interface{}) ([]map[string]interface{}, error) {
+	// 查詢
+	rs, err := tx.Query(query, args...)
+	if err != nil {
+		panic("查詢資料發生錯誤")
+	}
+
+	// 最後要關閉*sql.rows
+	defer func() {
+		if rs != nil {
+			_ = rs.Close()
+		}
+	}()
+
+	// 取得欄位名稱
+	col, colErr := rs.Columns()
+	if colErr != nil {
+		return nil, errors.New("取得欄位名稱發生錯誤")
+	}
+	// 取得欄位類別資訊
+	typeVal, err := rs.ColumnTypes()
+	if err != nil {
+		return nil, errors.New("取得欄位類別時發生錯誤")
+	}
+
+	results := make([]map[string]interface{}, 0)
+
+	for rs.Next() {
+		// 欄位數值
+		var colVar = make([]interface{}, len(col))
+
+		r, _ := regexp.Compile(`\\((.*)\\)`)
+		for i := 0; i < len(col); i++ {
+			// typeName 大寫類別名稱(ex:INT)
+			typeName := strings.ToUpper(r.ReplaceAllString(typeVal[i].DatabaseTypeName(), ""))
+			// SetColVarType 轉換type
+			SetColVarType(&colVar, i, typeName)
+		}
+
+		result := make(map[string]interface{})
+
+		if scanErr := rs.Scan(colVar...); scanErr != nil {
+			return nil, errors.New("印出資料時發生錯誤")
+		}
+
+		for j := 0; j < len(col); j++ {
+			// typeName 大寫類別名稱(ex:INT)
+			typeName := strings.ToUpper(r.ReplaceAllString(typeVal[j].DatabaseTypeName(), ""))
+			// SetResultValue 轉後type並設置該type值(依照資料表type)
+			SetResultValue(&result, col[j], colVar[j], typeName)
+		}
+		results = append(results, result)
+	}
+	if err := rs.Err(); err != nil {
+		return nil, errors.New("查詢資料時發生錯誤")
+	}
+	return results, nil
 }

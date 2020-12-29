@@ -130,7 +130,7 @@ func (h *Handler) Signup(ctx *gin.Context) {
 
 	// 新增註冊資料並增加角色權限
 	user, err := models.DefaultUserModel("users").SetConn(h.Conn).
-		AddUser(username, phone, email, string(hash[:]))
+		AddUser("testUserID", username, phone, email, string(hash[:]))
 	if err != nil {
 		response.BadRequest(ctx, "增加會員資料發生錯誤")
 		return

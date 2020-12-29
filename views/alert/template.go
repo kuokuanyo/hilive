@@ -20,9 +20,9 @@ const AlertTmpl = `
 	<body class="skin-black sidebar-mini">
 		<div class="wrapper">
 			<header class="main-header">
-				<a href={{.IndexURL}} class="logo">
-					<span class="logo-mini">{{.MiniLogo}}</span>
-					<span class="logo-lg">{{.Logo}}</span>
+				<a href={{.URLRoute.IndexURL}} class="logo">
+					<span class="logo-mini">{{.Config.MiniLogo}}</span>
+					<span class="logo-lg">{{.Config.Logo}}</span>
 				</a>
 				<nav class="navbar navbar-static-top">
 					<div id="firstnav">
@@ -81,7 +81,7 @@ const AlertTmpl = `
 										</li>
 										<li class="user-footer">
 											<div class="pull-right">
-												<a href="{{.URLPrefix}}/logout"
+												<a href="{{.URLRoute.URLPrefix}}/logout"
 												class="no-pjax btn btn-default btn-flat">{{"登出"}}</a>
 											</div>
 										</li>
@@ -95,7 +95,7 @@ const AlertTmpl = `
 			<aside class="main-sidebar">
 				<section class="sidebar" style="height: auto;">
 					<ul class="sidebar-menu" data-widget="tree">
-						{{$URLPrefix := .URLPrefix}}
+						{{$URLPrefix := .URLRoute.URLPrefix}}
 						{{range $key, $list := .Menu.List }}
 							{{if eq (len $list.ChildrenList) 0}}
 								{{if $list.Header}}

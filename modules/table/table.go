@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"hilive/modules/db"
+	"hilive/modules/paginator"
 	"hilive/modules/parameter"
 	"hilive/modules/service"
 	"hilive/modules/utils"
@@ -32,10 +33,12 @@ type PrimaryKey struct {
 // PanelInfo 頁面資訊
 type PanelInfo struct {
 	FieldList      types.FieldList  `json:"fieldlist"`        // 介面上的欄位資訊，是否可編輯、編輯選項、是否隱藏...等資訊
-	InfoList       types.InfoList   `json:"info_list"`        // 顯示在介面上的所有資料
+	InfoList       types.InfoList   `json:"info_list"`        // 每一筆資料的資訊
 	FilterFormData types.FormFields `json:"filter_form_data"` // 可以篩選條件的欄位表單資訊
-	Title          string           `json:"title"`
-	Description    string           `json:"description"`
+	Paginator      paginator.Paginator
+	PrimaryKey     string
+	Title          string `json:"title"`
+	Description    string `json:"description"`
 }
 
 // FormInfo 表單資訊
@@ -47,9 +50,14 @@ type FormInfo struct {
 
 // Table interface
 type Table interface {
+	// GetPrimaryKey 取得主鍵
+	GetPrimaryKey() PrimaryKey
 
 	// 設置主鍵取得InformationPanel
 	GetInfo() *types.InformationPanel
+
+	// GetForm 取得表單資訊
+	GetForm() *types.FormPanel
 
 	// 設置主鍵並取得FormPanel
 	GetFormPanel() *types.FormPanel
@@ -60,7 +68,7 @@ type Table interface {
 	// GetDataWithID 透過id取得資料並將值、預設值設置至BaseTable.Form.FormFields
 	GetDataWithID(param parameter.Parameters, services service.List) (FormInfo, error)
 
-	// GetData 從資料庫取得頁面需要顯示的資料，回傳每一筆資料資訊、欄位資訊、可過濾欄位資訊...等
+	// GetData 從資料庫取得頁面需要顯示的資料，回傳每一筆資料資訊、欄位資訊、可過濾欄位資訊、分頁資訊...等
 	GetData(params parameter.Parameters, services service.List) (PanelInfo, error)
 }
 
@@ -85,9 +93,19 @@ func DefaultBaseTable(cfgs ...ConfigTable) Table {
 
 // -----BaseTable的所有Table方法-----start
 
+// GetPrimaryKey 取得主鍵
+func (base *BaseTable) GetPrimaryKey() PrimaryKey {
+	return base.PrimaryKey
+}
+
 // GetInfo 設置主鍵取得InformationPanel
 func (base *BaseTable) GetInfo() *types.InformationPanel {
 	return base.Informatoin.SetPrimaryKey(base.PrimaryKey.Name, base.PrimaryKey.Type)
+}
+
+// GetForm 設置主鍵取得FormPanel
+func (base *BaseTable) GetForm() *types.FormPanel {
+	return base.Form.SetPrimaryKey(base.PrimaryKey.Name, base.PrimaryKey.Type)
 }
 
 // GetFormPanel 設置主鍵並取得FormPanel
@@ -95,7 +113,7 @@ func (base *BaseTable) GetFormPanel() *types.FormPanel {
 	return base.Form.SetPrimaryKey(base.PrimaryKey.Name, base.PrimaryKey.Type)
 }
 
-// GetNewForm 處理並設置表單欄位細節資訊(允許增加的表單欄位)
+// GetNewForm 處理並設置表單欄位細節資訊(新增資料的表單欄位)
 func (base *BaseTable) GetNewForm(services service.List) FormInfo {
 	return FormInfo{FieldList: base.Form.SetAllowAddValueOfField(services, base.GetSQLByService)}
 }
@@ -187,18 +205,22 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 	var (
 		connection     = base.getConnectionByService(services)
 		ids            = params.FindPKs() // FindPKs 取得__pk的值(多個)
+		countStatement string
 		queryStatement string
 		primaryKey     = base.Informatoin.Table + "." + base.PrimaryKey.Name // 主鍵
 		wheres         = ""
 		args           = make([]interface{}, 0)
 		whereArgs      = make([]interface{}, 0)
 		existKeys      = make([]string, 0)
+		size           int
 	)
 
 	if len(ids) > 0 {
 		queryStatement = "select %s from %s%s where " + primaryKey + " in (%s) %s ORDER BY %s.%s %s"
+		countStatement = "select count(*) from %s %s where " + primaryKey + " in (%s)"
 	} else {
 		queryStatement = "select %s from %s%s %s %s order by %s.%s %s LIMIT ? OFFSET ?"
+		countStatement = "select count(*) from %s %s %s"
 	}
 
 	// 取得所有欄位
@@ -259,9 +281,33 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 		infoList = append(infoList, base.getTemplateDataModel(res[i], params, columns))
 	}
 
+	// 計算資料數
+	if len(ids) == 0 {
+		countCmd := fmt.Sprintf(countStatement, base.Informatoin.Table, joins, wheres)
+
+		total, err := connection.Query(countCmd, whereArgs...)
+		if err != nil {
+			return PanelInfo{}, err
+		}
+		if base.connectionDriver == "mysql" {
+			size = int(total[0]["count(*)"].(int64))
+		}
+	}
+
+	// 設置Paginator.option(在被選中顯示資料筆數的地方加上select)
+	paginator := paginator.GetPaginatorInformation(size, params)
+	paginator.PageSizeList = base.Informatoin.GetPageSizeList()
+	paginator.Option = make(map[string]template.HTML, len(paginator.PageSizeList))
+	for i := 0; i < len(paginator.PageSizeList); i++ {
+		paginator.Option[paginator.PageSizeList[i]] = template.HTML("")
+	}
+	paginator.Option[params.PageSize] = template.HTML("select")
+
 	return PanelInfo{
 		InfoList:       infoList,
 		FieldList:      fieldList,
+		Paginator:      paginator,
+		PrimaryKey:     base.PrimaryKey.Name,
 		Title:          base.Informatoin.Title,
 		FilterFormData: filterForm,
 		Description:    base.Informatoin.Description,

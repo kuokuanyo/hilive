@@ -20,9 +20,9 @@ const NewMenuTmpl = `
 	<body class="skin-black sidebar-mini">
 		<div class="wrapper">
 			<header class="main-header">
-				<a href={{.IndexURL}} class="logo">
-					<span class="logo-mini">{{.MiniLogo}}</span>
-					<span class="logo-lg">{{.Logo}}</span>
+				<a href={{.URLRoute.IndexURL}} class="logo">
+					<span class="logo-mini">{{.Config.MiniLogo}}</span>
+					<span class="logo-lg">{{.Config.Logo}}</span>
 				</a>
 				<nav class="navbar navbar-static-top">
 					<div id="firstnav">
@@ -81,7 +81,7 @@ const NewMenuTmpl = `
 										</li>
 										<li class="user-footer">
 											<div class="pull-right">
-												<a href="{{.URLPrefix}}/logout"
+												<a href="{{.URLRoute.URLPrefix}}/logout"
 												class="no-pjax btn btn-default btn-flat">{{"登出"}}</a>
 											</div>
 										</li>
@@ -95,7 +95,7 @@ const NewMenuTmpl = `
 			<aside class="main-sidebar">
 				<section class="sidebar" style="height: auto;">
 					<ul class="sidebar-menu" data-widget="tree">
-						{{$URLPrefix := .URLPrefix}}
+						{{$URLPrefix := .URLRoute.URLPrefix}}
 						{{range $key, $list := .Menu.List }}
 							{{if eq (len $list.ChildrenList) 0}}
 								{{if $list.Header}}
@@ -201,7 +201,7 @@ const NewMenuTmpl = `
 								</div>
 							</div>
 							<div class="box-body" style=" ">
-								<form id={{.FormID}} action="{{.URL}}" method="post" accept-charset="UTF-8" class="form-horizontal" pjax-container style="background-color: white;">
+								<form id={{.FormID}} action="{{.URLRoute.InfoURL}}" method="post" accept-charset="UTF-8" class="form-horizontal" pjax-container style="background-color: white;">
 									<div class="box-body">
 
 										<div class="box-body">
@@ -231,6 +231,45 @@ const NewMenuTmpl = `
 																				class="form-control {{$data.Field}}" placeholder="{{$data.Placeholder}}">
 																		</div>
 																	{{end}}
+																{{else if eq $data.FormType.String "select"}}
+																	<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}[]"
+																	multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+																	{{if not .Editable}}disabled="disabled"{{end}}>
+																		{{range $key, $v := .FieldOptions }}
+																			<option value='{{$v.Value}}'>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																		{{end}}
+																	</select>
+																		<script>
+																			$("select.{{.Field}}").select2({{.OptionExt}});
+																		</script>
+																{{else if eq $data.FormType.String "select_single"}}
+																	<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}"
+																	data-multiple="false" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+																		{{if not .Editable}}disabled="disabled"{{end}}>
+																			<option></option>
+																			{{range $key, $v := .FieldOptions }}
+																				<option value='{{$v.Value}}' >{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																			{{end}}
+																	</select>
+																	<script>
+																		$("select.{{.Field}}").select2({{.OptionExt}});
+																	</script>
+																{{else if eq $data.FormType.String "iconpicker"}}
+																	<div class="input-group">
+																		<span class="input-group-addon"><i class="fa"></i></span>
+																			{{if eq $data.Value ""}}
+																				<input style="width: 140px" type="text" name="{{$data.Field}}" value="fa-bars"
+																					class="form-control {{.Field}}"
+																					placeholder="{{"Input Icon"}}">
+																			{{else}}
+																				<input style="width: 140px" type="text" name="{{$data.Field}}" value="{{$data.Value}}"
+																					class="form-control {{.Field}}"
+																					placeholder="{{"Input Icon"}}">
+																			{{end}}
+																	</div>
+																	<script>
+																		$('.{{.Field}}').iconpicker({placement: 'bottomLeft'});
+																	</script>
 																{{end}}
 															</div>
 														</div>	           
@@ -252,7 +291,7 @@ const NewMenuTmpl = `
 											</div>
 										</div>
 									</div>
-									<input type="hidden" name="__previous_" value="{{.Previous}}">
+									<input type="hidden" name="__previous_" value="{{.URLRoute.PreviousURL}}">
 									<input type="hidden" name="__token_" value="{{.Token}}">
 								</form>
 							</div>

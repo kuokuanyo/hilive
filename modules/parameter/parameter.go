@@ -2,6 +2,7 @@ package parameter
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -28,6 +29,12 @@ func DefaultParameters() Parameters {
 // SetFieldPKByJoinParam 將參數(多個)join成string加入Parameters.Fields["__pk"]
 func (param Parameters) SetFieldPKByJoinParam(id ...string) Parameters {
 	param.Fields["__pk"] = []string{strings.Join(id, ",")}
+	return param
+}
+
+// SetPage 設置Parameters.Page
+func (param Parameters) SetPage(page string) Parameters {
+	param.Page = page
 	return param
 }
 
@@ -119,4 +126,53 @@ func (param Parameters) GetFixedParam() url.Values {
 		p[key] = value
 	}
 	return p
+}
+
+// GetFixedParamWithoutSort 處理url參數(不包含sort)
+func (param Parameters) GetFixedParamWithoutSort() string {
+	p := url.Values{}
+	p.Add("__pageSize", param.PageSize)
+	for key, value := range param.Fields {
+		p[key] = value
+	}
+	if len(param.Columns) > 0 {
+		p.Add("__columns", strings.Join(param.Columns, ","))
+	}
+	return "&" + p.Encode()
+}
+
+// GetLastPageRouteParam 取得上一頁路徑參數
+func (param Parameters) GetLastPageRouteParam() string {
+	p := param.GetFixedParam()
+	pageInt, _ := strconv.Atoi(param.Page)
+	p.Add("__page", strconv.Itoa(pageInt-1))
+	return "?" + p.Encode()
+}
+
+// GetNextPageRouteParam 取得下一頁路徑參數
+func (param Parameters) GetNextPageRouteParam() string {
+	p := param.GetFixedParam()
+	pageInt, _ := strconv.Atoi(param.Page)
+	p.Add("__page", strconv.Itoa(pageInt+1))
+	return "?" + p.Encode()
+}
+
+// URL 設置Page後回傳url參數
+func (param Parameters) URL(page string) string {
+	return param.URLPath + param.SetPage(page).GetRouteParamStr()
+}
+
+// GetRouteParamWithoutPageSize 取得url參數路徑(沒有pagesize)
+func (param Parameters) GetRouteParamWithoutPageSize(page string) string {
+	p := url.Values{}
+	p.Add("__sort", param.SortField)
+	p.Add("__page", page)
+	p.Add("__sort_type", param.SortType)
+	if len(param.Columns) > 0 {
+		p.Add("__columns", strings.Join(param.Columns, ","))
+	}
+	for key, value := range param.Fields {
+		p[key] = value
+	}
+	return "?" + p.Encode()
 }

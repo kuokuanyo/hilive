@@ -1,11 +1,14 @@
 package models
 
 import (
+	dbsql "database/sql"
 	"hilive/modules/db"
 	"hilive/modules/db/sql"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // UserModel user資料表欄位
@@ -33,9 +36,21 @@ func DefaultUserModel(tablename string) UserModel {
 	return UserModel{Base: Base{TableName: tablename}}
 }
 
+// GetUserModelAndID 設置UserModel與ID
+func GetUserModelAndID(id, tablename string) UserModel {
+	idInt, _ := strconv.Atoi(id)
+	return UserModel{Base: Base{TableName: tablename}, ID: int64(idInt)}
+}
+
 // SetConn 設定connection
 func (user UserModel) SetConn(conn db.Connection) UserModel {
 	user.Conn = conn
+	return user
+}
+
+// SetTx 設置Tx
+func (user UserModel) SetTx(tx *dbsql.Tx) UserModel {
+	user.Base.Tx = tx
 	return user
 }
 
@@ -58,9 +73,37 @@ func (user UserModel) FindByEmail(email interface{}) UserModel {
 	return user.MapToUserModel(item)
 }
 
+// Update 更新用戶資料
+func (user UserModel) Update(username, phone, email, password string) (int64, error) {
+	fieldValues := sql.Value{
+		"username":   username,
+		"phone":      phone,
+		"email":      email,
+		"updated_at": time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	if password != "" {
+		fieldValues["password"] = password
+	}
+	return user.SetTx(user.Tx).Table(user.Base.TableName).
+		Where("id", "=", user.ID).Update(fieldValues)
+}
+
+// DeleteRolesByID 刪除該ID用戶所有角色
+func (user UserModel) DeleteRolesByID() error {
+	return user.Base.Table("role_users").Where("user_id", "=", user.ID).Delete()
+}
+
+// DeletePermissionsByID 刪除該ID用戶所有權限
+func (user UserModel) DeletePermissionsByID() error {
+	return user.SetTx(user.Tx).Table("user_permissions").
+		Where("user_id", "=", user.ID).Delete()
+}
+
 // AddUser 增加會員資料
-func (user UserModel) AddUser(username, phone, email, password string) (UserModel, error) {
-	id, err := user.Table(user.TableName).Insert(sql.Value{
+func (user UserModel) AddUser(userid, username, phone, email, password string) (UserModel, error) {
+	id, err := user.SetTx(user.Base.Tx).Table(user.TableName).Insert(sql.Value{
+		"userid":   userid,
 		"username": username,
 		"phone":    phone,
 		"email":    email,
@@ -68,6 +111,7 @@ func (user UserModel) AddUser(username, phone, email, password string) (UserMode
 	})
 
 	user.ID = id
+	user.UserID = userid
 	user.UserName = username
 	user.Phone = phone
 	user.Email = email
@@ -83,7 +127,7 @@ func (user UserModel) AddRole(id string) (int64, error) {
 		Where("user_id", "=", user.ID).First()
 	if id != "" {
 		if checkRole == nil {
-			user.Table("role_users").
+			user.SetTx(user.Base.Tx).Table("role_users").
 				Insert(sql.Value{
 					"role_id": id,
 					"user_id": user.ID,
@@ -100,7 +144,7 @@ func (user UserModel) AddPermission(id string) (int64, error) {
 		Where("user_id", "=", user.ID).First()
 	if id != "" {
 		if checkPermission == nil {
-			user.Table("user_permissions").
+			user.SetTx(user.Base.Tx).Table("user_permissions").
 				Insert(sql.Value{
 					"permission_id": id,
 					"user_id":       user.ID,

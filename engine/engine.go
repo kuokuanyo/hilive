@@ -121,6 +121,11 @@ func (eng *Engine) InitRouter() *Engine {
 	// 使用者
 	authRoute.GET(eng.config.ManagerURL, eng.handler.ShowManegerInfo)
 
+	// 角色
+	authRoute.GET(eng.config.RolesURL, eng.handler.ShowRolesInfo)
+
+	// 權限
+	authRoute.GET(eng.config.PermissionURL, eng.handler.ShowPermissionInfo)
 
 	return eng
 }

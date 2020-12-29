@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	form2 "hilive/modules/form"
 	"hilive/modules/config"
 	"hilive/modules/db"
 	"hilive/modules/service"
@@ -12,6 +13,9 @@ import (
 	"strings"
 )
 
+// FormPostFunc 表單Post功能函式
+type FormPostFunc func(values form2.Values) error
+
 // FormPanel 表單面板
 type FormPanel struct {
 	FieldList         FormFields
@@ -19,6 +23,8 @@ type FormPanel struct {
 	Table             string
 	Title             string
 	Description       string
+	InsertFunc        FormPostFunc
+	UpdateFunc        FormPostFunc
 	primaryKey        primaryKey
 }
 
@@ -42,8 +48,9 @@ type FormField struct {
 	FieldDisplay         FieldDisplay
 	FieldOptions         FieldOptions
 	FieldOptionFromTable FieldOptionFromTable
-	OptionExt            template.JS `json:"option_ext"`   // 不同欄位類型處理方式
-	OptionExt2           template.JS `json:"option_ext_2"` // 不同欄位類型處理方式
+	OptionExt            template.JS   `json:"option_ext"`   // 不同欄位類型處理方式
+	OptionExt2           template.JS   `json:"option_ext_2"` // 不同欄位類型處理方式
+	HelpMsg              template.HTML `json:"help_msg"`     // 欄位提示訊息
 }
 
 // FieldOptions 紀錄所有表單欄位選單
@@ -86,7 +93,7 @@ func (f *FormPanel) AddField(header, field string, fieldType db.DatabaseType, fo
 		TypeName:    fieldType,
 		Editable:    true,
 		Hide:        false,
-		Placeholder: "輸入 " + header,
+		Placeholder: " 輸入 " + header,
 		FormType:    formType,
 		FieldDisplay: FieldDisplay{
 			DisplayFunc: func(value FieldModel) interface{} {
@@ -127,11 +134,11 @@ func (f *FormPanel) FieldWithValue(pk, id string, columns []string, res map[stri
 
 	if !hasPk {
 		list = append(list, FormField{
-			Header: pk,
-			Field: pk,
-			Value: template.HTML(id),
+			Header:   pk,
+			Field:    pk,
+			Value:    template.HTML(id),
 			FormType: form.Default,
-			Hide: true,
+			Hide:     true,
 		})
 	}
 	return list
@@ -176,6 +183,18 @@ func (f *FormPanel) SetFieldMust() *FormPanel {
 // SetFieldOptions 設置Field.FieldOptions
 func (f *FormPanel) SetFieldOptions(options FieldOptions) *FormPanel {
 	f.FieldList[f.curFieldListIndex].FieldOptions = options
+	return f
+}
+
+// SetInsertFunc 設置新增函式
+func (f *FormPanel) SetInsertFunc(fn FormPostFunc) *FormPanel {
+	f.InsertFunc = fn
+	return f
+}
+
+// SetUpdateFunc 設置更新函式
+func (f *FormPanel) SetUpdateFunc(fn FormPostFunc) *FormPanel {
+	f.UpdateFunc = fn
 	return f
 }
 
@@ -318,6 +337,12 @@ func (f *FormField) setFieldOptionFromTableBySQL(s *db.SQL) {
 func (f *FormField) GetDataValue(columns []string, v interface{}) string {
 	return utils.AorB(utils.InArray(columns, f.Field),
 		string(db.GetValueFromDatabaseType(f.TypeName, v)), "")
+}
+
+// SetFieldHelpMsg 設置欄位提示訊息
+func (f *FormPanel) SetFieldHelpMsg(s template.HTML) *FormPanel {
+	f.FieldList[f.curFieldListIndex].HelpMsg = s
+	return f
 }
 
 // SetSelected 設置已被選擇的選項及label

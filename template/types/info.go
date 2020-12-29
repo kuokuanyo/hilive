@@ -26,9 +26,9 @@ type Field struct {
 	Field            string
 	TypeName         db.DatabaseType
 	Joins            Joins
-	SortAble         bool
-	EditAble         bool
-	FilterAble       bool
+	Sortable         bool
+	Editable         bool
+	Filterable       bool
 	Hide             bool
 	FieldDisplay     FieldDisplay
 	FilterFormFields []FilterFormField // 可以過濾欄位的表單資訊
@@ -145,9 +145,9 @@ func (i *InformationPanel) AddField(header, field string, typeName db.DatabaseTy
 		Header:   header,
 		Field:    field,
 		TypeName: typeName,
-		SortAble: false,
+		Sortable: false,
 		Joins:    make(Joins, 0),
-		EditAble: true,
+		Editable: false,
 		FieldDisplay: FieldDisplay{
 			DisplayFunc: func(value FieldModel) interface{} {
 				return value.Value
@@ -198,20 +198,19 @@ func (f FieldList) GetFieldInformationAndJoinOrderAndFilterForm(info TableInfo, 
 			}
 		}
 
-		if field.FilterAble {
+		if field.Filterable {
 			filterForm = append(filterForm, field.GetFormFieldFromFilterFormFields(params, headField)...)
 		}
-
 		if field.Hide {
 			continue
 		}
 
 		fieldList = append(fieldList, Field{
 			Header:   field.Header,
-			SortAble: field.SortAble,
+			Sortable: field.Sortable,
 			Field:    headField,
 			Hide:     !utils.InArrayWithoutEmpty(params.Columns, headField),
-			EditAble: field.EditAble,
+			Editable: field.Editable,
 		})
 	}
 	return fieldList, fields, joinFields, joins, joinTables, filterForm
@@ -311,13 +310,13 @@ func (f FieldList) GetFieldByFieldName(name string) Field {
 
 // FieldSortable 欄位可以排序
 func (i *InformationPanel) FieldSortable() *InformationPanel {
-	i.FieldList[i.curFieldListIndex].SortAble = true
+	i.FieldList[i.curFieldListIndex].Sortable = true
 	return i
 }
 
 // FieldFilterable 欄位可以過濾
 func (i *InformationPanel) FieldFilterable() *InformationPanel {
-	i.FieldList[i.curFieldListIndex].FilterAble = true
+	i.FieldList[i.curFieldListIndex].Filterable = true
 	i.FieldList[i.curFieldListIndex].FilterFormFields = append(i.FieldList[i.curFieldListIndex].FilterFormFields,
 		FilterFormField{
 			FormType:    form.Text,
@@ -366,4 +365,13 @@ func (j Joins) Last() Join {
 // JoinField return table_join_field
 func JoinField(table, field string) string {
 	return table + "_join_" + field
+}
+
+// GetPageSizeList 取得單頁顯示資料筆數選項
+func (i *InformationPanel) GetPageSizeList() []string {
+	var pageSizeList = make([]string, len(i.PageSizeList))
+	for j := 0; j < len(i.PageSizeList); j++ {
+		pageSizeList[j] = strconv.Itoa(i.PageSizeList[j])
+	}
+	return pageSizeList
 }

@@ -4,16 +4,17 @@ import (
 	"hilive/guard"
 	"hilive/models"
 	"hilive/modules/auth"
+	"hilive/modules/config"
 	"hilive/modules/menu"
 	"hilive/modules/parameter"
 	"hilive/modules/table"
+	"hilive/modules/utils"
 	"hilive/template/types"
 	"hilive/views/alert"
 	"hilive/views/menuviews"
 	"html/template"
 
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 // EditMenu 編輯菜單POST功能
@@ -22,7 +23,7 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	if param.Alert != "" {
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-		h.getMenuInfoPanel(ctx, param.Alert)
+		h.getMenuInfoPanel(ctx, h.Config.MenuURL, param.Alert)
 		return
 	}
 
@@ -36,7 +37,7 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
 			formInfo, _ := table.GetMenuFormPanel(h.Conn).
 				GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(param.ID), h.Services)
-			h.showEditMenu(ctx, formInfo, "刪除角色發生錯誤")
+			h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "刪除角色發生錯誤")
 			return
 		}
 	}
@@ -48,7 +49,7 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
 			formInfo, _ := table.GetMenuFormPanel(h.Conn).
 				GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(param.ID), h.Services)
-			h.showEditMenu(ctx, formInfo, "新建角色發生錯誤")
+			h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "新建角色發生錯誤")
 			return
 		}
 	}
@@ -60,14 +61,14 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
 			formInfo, _ := table.GetMenuFormPanel(h.Conn).
 				GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(param.ID), h.Services)
-			h.showEditMenu(ctx, formInfo, "更新菜單資料發生錯誤")
+			h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "更新菜單資料發生錯誤")
 			return
 		}
 	}
 
 	ctx.Header("Content-Type", "text/html; charset=utf-8")
 	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-	h.getMenuInfoPanel(ctx, "")
+	h.getMenuInfoPanel(ctx, h.Config.MenuURL, "")
 }
 
 // ShowEditMenu edit menu GET功能
@@ -75,11 +76,10 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 	if ctx.Query("id") == "" {
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.Header("X-Pjax-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-		h.getMenuInfoPanel(ctx, "請填寫id參數")
+		h.getMenuInfoPanel(ctx, h.Config.MenuURL, "請填寫id參數")
 		return
 	}
 
-	urlPrefix := "/" + h.Config.URLPrefix
 	// 取得middleware驗證後的user
 	user := auth.GetUserByMiddleware()
 	// GetMenuInformation 透過user取得menu資料表資訊
@@ -89,6 +89,10 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 		GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(ctx.Query("id")), h.Services)
 
 	if err != nil {
+		route := URLRoute{
+			IndexURL:  config.Prefix() + h.Config.IndexURL,
+			URLPrefix: config.Prefix(),
+		}
 		tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
 		if err != nil {
 			panic("使用alert模板發生錯誤")
@@ -97,35 +101,33 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 			User         models.UserModel
 			Menu         *menu.Menu
 			AlertContent string
-			MiniLogo     template.HTML
-			Logo         template.HTML
-			IndexURL     string
-			URLPrefix    string
+			Config       *config.Config
+			URLRoute     URLRoute
 		}{
 			User:         user,
 			Menu:         menuInfo,
 			AlertContent: err.Error(),
-			MiniLogo:     h.Config.MiniLogo,
-			Logo:         h.Config.Logo,
-			IndexURL:     urlPrefix + h.Config.IndexURL,
-			URLPrefix:    urlPrefix,
+			Config:       h.Config,
+			URLRoute:     route,
 		})
 	}
 
-	h.showEditMenu(ctx, formInfo, "")
+	h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "")
 }
 
-func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, alert string) {
-	formID, err := uuid.NewV4()
-	if err != nil {
-		panic("產生uuid發生錯誤")
-	}
-
+// showEditMenu /menu/edit模板語法
+func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, url string, alert string) {
 	// 取得middleware驗證後的user
 	user := auth.GetUserByMiddleware()
 	// GetMenuInformation 透過user取得menu資料表資訊
-	menuInfo := menu.GetMenuInformation(user, h.Conn)
-	urlPrefix := "/" + h.Config.URLPrefix
+	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(url)
+
+	route := URLRoute{
+		InfoURL:     config.Prefix() + h.Config.MenuEditURL,
+		IndexURL:    config.Prefix() + h.Config.IndexURL,
+		URLPrefix:   config.Prefix(),
+		PreviousURL: config.Prefix() + h.Config.MenuURL,
+	}
 
 	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(menuviews.EditMenuTmpl)
 	if err != nil {
@@ -137,25 +139,17 @@ func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, alert 
 		Menu         *menu.Menu
 		AlertContent string
 		Content      types.FormFields
-		MiniLogo     template.HTML
-		Logo         template.HTML
-		URL          string
-		IndexURL     string
-		URLPrefix    string
-		Previous     string
+		Config       *config.Config
+		URLRoute     URLRoute
 		Token        string
 	}{
-		FormID:       formID.String(),
+		FormID:       utils.UUID(8),
 		User:         user,
 		Menu:         menuInfo,
 		AlertContent: alert,
 		Content:      formInfo.FieldList,
-		MiniLogo:     h.Config.MiniLogo,
-		Logo:         h.Config.Logo,
-		URL:          urlPrefix + h.Config.MenuEditURL,
-		IndexURL:     urlPrefix + h.Config.IndexURL,
-		URLPrefix:    urlPrefix,
-		Previous:     urlPrefix + h.Config.MenuURL,
+		Config:       h.Config,
+		URLRoute:     route,
 		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
 	})
 }

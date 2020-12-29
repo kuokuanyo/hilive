@@ -88,6 +88,12 @@ type Config struct {
 	// ManagerURL manager url
 	ManagerURL string `json:"manager_URL,omitempty" yaml:"manager_URL,omitempty" ini:"manager_URL,omitempty"`
 
+	// RolesURL roles url
+	RolesURL string `json:"roles_URL,omitempty" yaml:"roles_URL,omitempty" ini:"roles_URL,omitempty"`
+
+	// PermissionURL roles url
+	PermissionURL string `json:"permission_URL,omitempty" yaml:"permission_URL,omitempty" ini:"permission_URL,omitempty"`
+
 	// Assets visit link.
 	AssetURL string `json:"asset_url,omitempty" yaml:"asset_url,omitempty" ini:"asset_url,omitempty"`
 
@@ -156,6 +162,8 @@ func SetDefault(cfg Config) Config {
 	cfg.MenuDeleteURL = utils.SetDefault(cfg.MenuDeleteURL, "", "/menu/delete")
 	cfg.MenuNewURL = utils.SetDefault(cfg.MenuNewURL, "", "/menu/new")
 	cfg.ManagerURL = utils.SetDefault(cfg.ManagerURL, "", "/info/manager")
+	cfg.RolesURL = utils.SetDefault(cfg.RolesURL, "", "/info/roles")
+	cfg.PermissionURL = utils.SetDefault(cfg.PermissionURL, "", "/info/permission")
 
 	// cookie時效
 	if cfg.SessionLifeTime == 0 {
@@ -210,6 +218,8 @@ func (c *Config) ToMap() map[string]string {
 	m["menu_delete_url"] = c.MenuDeleteURL
 	m["menu_new_url"] = c.MenuNewURL
 	m["manager_url"] = c.ManagerURL
+	m["roles_url"] = c.RolesURL
+	m["permission_url"] = c.PermissionURL
 	m["store"] = c.Store.JSON()
 	return m
 }
