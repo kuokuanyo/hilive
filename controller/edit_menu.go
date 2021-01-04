@@ -21,9 +21,9 @@ import (
 func (h *Handler) EditMenu(ctx *gin.Context) {
 	param := guard.GetEditMenuParam(ctx)
 	if param.Alert != "" {
+		h.Alert = param.Alert
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-		h.getMenuInfoPanel(ctx, h.Config.MenuURL, param.Alert)
 		return
 	}
 
@@ -34,10 +34,9 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	err := menuModel.DeleteRoles()
 	if err != nil {
 		if err.Error() != "沒有影響任何資料" {
+			h.Alert = "刪除角色發生錯誤"
+			ctx.Header("Content-Type", "text/html; charset=utf-8")
 			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-			formInfo, _ := table.GetMenuFormPanel(h.Conn).
-				GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(param.ID), h.Services)
-			h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "刪除角色發生錯誤")
 			return
 		}
 	}
@@ -46,10 +45,9 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	for _, roleID := range param.Roles {
 		_, err = menuModel.AddRole(roleID)
 		if err != nil {
+			h.Alert = "新建角色發生錯誤"
+			ctx.Header("Content-Type", "text/html; charset=utf-8")
 			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-			formInfo, _ := table.GetMenuFormPanel(h.Conn).
-				GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(param.ID), h.Services)
-			h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "新建角色發生錯誤")
 			return
 		}
 	}
@@ -58,45 +56,54 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	_, err = menuModel.Update(param.Title, param.Icon, param.URL, param.Header, param.ParentID)
 	if err != nil {
 		if err.Error() != "沒有影響任何資料" {
+			h.Alert = "更新菜單資料發生錯誤"
+			ctx.Header("Content-Type", "text/html; charset=utf-8")
 			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-			formInfo, _ := table.GetMenuFormPanel(h.Conn).
-				GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(param.ID), h.Services)
-			h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "更新菜單資料發生錯誤")
 			return
 		}
 	}
 
 	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-	h.getMenuInfoPanel(ctx, h.Config.MenuURL, "")
+	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuEditURL)
 }
 
 // ShowEditMenu edit menu GET功能
 func (h *Handler) ShowEditMenu(ctx *gin.Context) {
-	if ctx.Query("id") == "" {
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-Pjax-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-		h.getMenuInfoPanel(ctx, h.Config.MenuURL, "請填寫id參數")
-		return
-	}
-
 	// 取得middleware驗證後的user
 	user := auth.GetUserByMiddleware()
 	// GetMenuInformation 透過user取得menu資料表資訊
 	menuInfo := menu.GetMenuInformation(user, h.Conn)
 
+	if ctx.Query("id") == "" {
+		route := URLRoute{
+			IndexURL:  config.Prefix() + h.Config.IndexURL,
+			URLPrefix: config.Prefix(),
+		}
+		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
+		tmpl.Execute(ctx.Writer, struct {
+			User         models.UserModel
+			Menu         *menu.Menu
+			AlertContent string
+			Config       *config.Config
+			URLRoute     URLRoute
+		}{
+			User:         user,
+			Menu:         menuInfo,
+			AlertContent: "請填寫id參數",
+			Config:       h.Config,
+			URLRoute:     route,
+		})
+		return
+	}
+
 	formInfo, err := table.GetMenuFormPanel(h.Conn).
 		GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(ctx.Query("id")), h.Services)
-
 	if err != nil {
 		route := URLRoute{
 			IndexURL:  config.Prefix() + h.Config.IndexURL,
 			URLPrefix: config.Prefix(),
 		}
-		tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
-		if err != nil {
-			panic("使用alert模板發生錯誤")
-		}
+		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
 		tmpl.Execute(ctx.Writer, struct {
 			User         models.UserModel
 			Menu         *menu.Menu
@@ -111,8 +118,7 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 			URLRoute:     route,
 		})
 	}
-
-	h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, "")
+	h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, h.Alert)
 }
 
 // showEditMenu /menu/edit模板語法
@@ -152,4 +158,7 @@ func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, url st
 		URLRoute:     route,
 		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
 	})
+	if alert != "" {
+		h.Alert = ""
+	}
 }

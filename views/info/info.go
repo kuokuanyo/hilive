@@ -180,7 +180,7 @@ const InfoTmpl = `
 						<small>{{.PanelInfo.Description}}</small>
 					</h1>
 					<ol class="breadcrumb" style="margin-right: 30px;">
-						<li><a href="/admin/menu"><i class="fa fa-dashboard"></i> 首頁</a></li>
+						<li><a href={{.URLRoute.IndexURL}}><i class="fa fa-dashboard"></i> 首頁</a></li>
 					</ol>
 				</section>
 				<section class="content">

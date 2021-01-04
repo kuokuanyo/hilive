@@ -18,7 +18,7 @@ import (
 // ShowMenu menu GET功能
 func (h *Handler) ShowMenu(ctx *gin.Context) {
 	// getMenuInfoPanel 取得menu顯示資訊面板
-	h.getMenuInfoPanel(ctx, h.Config.MenuURL, "")
+	h.getMenuInfoPanel(ctx, h.Config.MenuURL, h.Alert)
 }
 
 // getMenuInfoPanel 取得menu前端資訊面板
@@ -42,28 +42,30 @@ func (h *Handler) getMenuInfoPanel(ctx *gin.Context, url string, alert string) {
 		panic("使用菜單模板發生錯誤")
 	}
 	if err := tmpl.Execute(ctx.Writer, struct {
-		FormID   string
-		User     models.UserModel
-		Menu     *menu.Menu
-		Alert    string
-		Content  types.FormFields
-		Config   *config.Config
-		Token    string
-		URLRoute URLRoute
+		FormID       string
+		User         models.UserModel
+		Menu         *menu.Menu
+		AlertContent string
+		Content      types.FormFields
+		Config       *config.Config
+		Token        string
+		URLRoute     URLRoute
 	}{
-		FormID:   utils.UUID(8),
-		User:     user,
-		Menu:     menuInfo,
-		Alert:    alert,
-		Content:  formInfo.FieldList,
-		Token:    auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
-		Config:   h.Config,
-		URLRoute: route,
+		FormID:       utils.UUID(8),
+		User:         user,
+		Menu:         menuInfo,
+		AlertContent: alert,
+		Content:      formInfo.FieldList,
+		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
+		Config:       h.Config,
+		URLRoute:     route,
 	}); err == nil {
 		ctx.Status(http.StatusOK)
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 	} else {
-		ctx.Status(http.StatusOK)
-		panic("使用菜單模板發生錯誤")
+		panic("使用新建菜單模板發生錯誤")
+	}
+	if alert != "" {
+		h.Alert = ""
 	}
 }

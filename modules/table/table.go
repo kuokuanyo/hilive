@@ -115,7 +115,9 @@ func (base *BaseTable) GetFormPanel() *types.FormPanel {
 
 // GetNewForm 處理並設置表單欄位細節資訊(新增資料的表單欄位)
 func (base *BaseTable) GetNewForm(services service.List) FormInfo {
-	return FormInfo{FieldList: base.Form.SetAllowAddValueOfField(services, base.GetSQLByService)}
+	return FormInfo{FieldList: base.Form.SetAllowAddValueOfField(services, base.GetSQLByService),
+		Title:       base.Form.Title,
+		Description: base.Form.Description}
 }
 
 // GetDataWithID 透過id取得資料並將值、預設值設置至BaseTable.Form.FormFields

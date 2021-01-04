@@ -189,11 +189,11 @@ const MenuTmpl = `
 				</section>
 				<section class="content">
 					<div>
-						{{if ne .Alert ""}}
+						{{if ne .AlertContent ""}}
 							<div class="alert alert-warning alert-dismissible">
 							<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
 							<h4>錯誤</h4>
-							{{ .Alert}}
+							{{ .AlertContent}}
 							</div>
 						{{end}}
 						<div class="row">
@@ -308,56 +308,69 @@ const MenuTmpl = `
 											</ol>
 										</div>
 										<script data-exec-on-popstate="">
-											$(function () {
-												$('.tree_branch_delete').click(function () {
-													let id = $(this).data('id');
-													swal({
-															title: {{"確定要刪除嗎?"}} +"?",
-															type: "warning",
-															showCancelButton: true,
-															confirmButtonColor: "#DD6B55",
-															confirmButtonText: {{"確定"}},
-															closeOnConfirm: false,
-															cancelButtonText: {{"取消"}}
-														},
-														function () {
-															$.ajax({
-																method: 'post',
-																url: {{.URLRoute.DeleteURL}} +'?id=' + id,
-																data: {},
-																success: function (data) {
-																	$.pjax.reload('#pjax-container');
-																	if (data.code === 200) {
-																		swal(data.msg, '', "success");
-																	} else {
-																		swal(data.msg, '', "error");
-																	}
-																},
-																error: function (data) {
-																	if (data.responseText !== "") {
-																		swal(data.responseJSON.msg, '', 'error');
-																	} else {
-																		swal("{{"錯誤"}}", '', 'error');
-																	}
-																},
-															});
+										$(function () {
+											$('#tree-model').nestable([]);
+											$('.tree_branch_delete').click(function () {
+												let id = $(this).data('id');
+												swal({
+														title: {{"確定要刪除嗎?"}},
+														type: "warning",
+														showCancelButton: true,
+														confirmButtonColor: "#DD6B55",
+														confirmButtonText: {{"確定"}},
+														closeOnConfirm: false,
+														cancelButtonText: {{"取消"}}
+													},
+													function () {
+														$.ajax({
+															method: 'post',
+															url: {{.URLRoute.DeleteURL}} +'?id=' + id,
+															data: {},
+															success: function (data) {
+																$.pjax.reload('#pjax-container');
+																if (data.code === 200) {
+																	swal(data.msg, '', "success");
+																} else {
+																	swal(data.msg, '', "error");
+																}
+															},
+															error: function (data) {
+																if (data.responseText !== "") {
+																	swal(data.responseJSON.msg, '', 'error');
+																} else {
+																	swal("{{"錯誤"}}", '', 'error');
+																}
+															},
 														});
-												});
-												$('.tree-model-refresh').click(function () {
-													$.pjax.reload('#pjax-container');
-													toastr.success(toastMsg);
-												});
-												$('.tree-model-tree-tools').on('click', function (e) {
-													let target = $(e.target),
-														action = target.data('action');
-													if (action === 'expand') {
-														$('.dd').nestable('expandAll');
-													}
-													if (action === 'collapse') {
-														$('.dd').nestable('collapseAll');
-													}
-												});
+													});
 											});
+											$('.tree-model-save').click(function () {
+												let serialize = $('#tree-model').nestable('serialize');
+												$.post("", {
+														_order: JSON.stringify(serialize)
+													},
+													function (data) {
+														$.pjax.reload('#pjax-container');
+														toastr.success('Save succeeded !');
+													});
+											});
+											$('.tree-model-refresh').click(function () {
+												$.pjax.reload('#pjax-container');
+												toastr.success(toastMsg);
+											});
+											$('.tree-model-tree-tools').on('click', function (e) {
+												let target = $(e.target),
+													action = target.data('action');
+												if (action === 'expand') {
+													$('.dd').nestable('expandAll');
+												}
+												if (action === 'collapse') {
+													$('.dd').nestable('collapseAll');
+												}
+											});
+											$(".parent_id").select2({"allowClear": true, "placeholder": "Parent"});
+											$(".roles").select2({"allowClear": true, "placeholder": "Roles"});
+										});
 										</script>
 									</div>
 								</div>

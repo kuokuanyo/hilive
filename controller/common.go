@@ -5,6 +5,8 @@ import (
 	"hilive/modules/db"
 	"hilive/modules/service"
 	"html/template"
+	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +17,7 @@ type Handler struct {
 	Conn     db.Connection
 	Gin      *gin.Engine
 	Services service.List
+	Alert    string
 }
 
 // URLRoute 模板需要使用的URL路徑
@@ -40,4 +43,18 @@ var DefaultFuncMap = template.FuncMap{
 	"isLinkURL": func(s string) bool {
 		return (len(s) > 7 && s[:7] == "http://") || (len(s) > 8 && s[:8] == "https://")
 	},
+}
+
+// isInfoURL 檢查url
+func isInfoURL(s string) bool {
+	reg, _ := regexp.Compile("(.*?)info/(.*?)$")
+	sub := reg.FindStringSubmatch(s)
+	return len(sub) > 2 && !strings.Contains(sub[2], "/")
+}
+
+// isNewURL 檢查url
+func isNewURL(s string, p string) bool {
+	reg, _ := regexp.Compile("(.*?)info/" + p + "/new")
+
+	return reg.MatchString(s)
 }

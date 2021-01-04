@@ -70,6 +70,7 @@ func GetManagerFormPanel(conn db.Connection) (managerTable Table) {
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
 			return ""
 		})
+	formList.SetTable("users").SetTitle("用戶").SetDescription("新增用戶")
 
 	// 設置表單需要使用的更新函式
 	formList.SetUpdateFunc(func(values form2.Values) error {

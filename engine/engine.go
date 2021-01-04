@@ -120,6 +120,7 @@ func (eng *Engine) InitRouter() *Engine {
 
 	// 使用者
 	authRoute.GET(eng.config.ManagerURL, eng.handler.ShowManegerInfo)
+	authRoute.GET(eng.config.ManagerNewURL, eng.guard.ShowManagerNewForm, eng.handler.ShowManagerNewForm)
 
 	// 角色
 	authRoute.GET(eng.config.RolesURL, eng.handler.ShowRolesInfo)

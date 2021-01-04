@@ -20,9 +20,9 @@ import (
 func (h *Handler) NewMenu(ctx *gin.Context) {
 	param := guard.GetNewMenuParam(ctx)
 	if param.Alert != "" {
-		ctx.Header("Context-Type", "text/html; charset=utf-8")
+		h.Alert = param.Alert
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-		h.getMenuInfoPanel(ctx, h.Config.MenuURL, param.Alert)
 		return
 	}
 	// GetUserByMiddleware 取得middleware驗證後的user
@@ -32,29 +32,30 @@ func (h *Handler) NewMenu(ctx *gin.Context) {
 	menuModel, err := models.DefaultMenuModel().SetConn(h.Conn).
 		New(param.Title, param.Icon, param.URL, param.Header, param.ParentID, (menu.GetMenuInformation(user, h.Conn)).MaxOrder+1)
 	if err != nil {
-		h.showNewMenu(ctx, h.Config.MenuNewURL, "新建菜單發生錯誤")
+		h.Alert = "新建菜單發生錯誤"
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
+		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuNewURL)
 		return
 	}
 
 	for _, roleID := range param.Roles {
 		_, err = menuModel.AddRole(roleID)
 		if err != nil {
-			h.showNewMenu(ctx, h.Config.MenuNewURL, "新建角色發生錯誤")
+			h.Alert = "新建角色發生錯誤"
+			ctx.Header("Content-Type", "text/html; charset=utf-8")
+			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuNewURL)
 			return
 		}
 	}
-
 	// 增加MaxOrder
 	menu.GetMenuInformation(user, h.Conn).MaxOrder++
-
 	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
-	h.getMenuInfoPanel(ctx, h.Config.MenuURL, "")
+	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuNewURL)
 }
 
 // ShowNewMenu new menu GET功能
 func (h *Handler) ShowNewMenu(ctx *gin.Context) {
-	h.showNewMenu(ctx, h.Config.MenuNewURL, "")
+	h.showNewMenu(ctx, h.Config.MenuNewURL, h.Alert)
 }
 
 // showNewMenu new menu面板
@@ -99,7 +100,9 @@ func (h *Handler) showNewMenu(ctx *gin.Context, url string, alert string) {
 		ctx.Status(http.StatusOK)
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 	} else {
-		ctx.Status(http.StatusOK)
 		panic("使用新建菜單模板發生錯誤")
+	}
+	if alert != "" {
+		h.Alert = ""
 	}
 }

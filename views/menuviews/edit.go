@@ -180,24 +180,24 @@ const EditMenuTmpl = `
 						<small>編輯菜單</small>
 					</h1>
 					<ol class="breadcrumb" style="margin-right: 30px;">
-						<li><a href="/admin/menu"><i class="fa fa-dashboard"></i> 首頁</a></li>
+						<li><a href={{.URLRoute.IndexURL}}><i class="fa fa-dashboard"></i> 首頁</a></li>
 					</ol>
 				</section>
 				<section class="content">
-					{{if ne .AlertContent ""}}
-					<div class="alert alert-warning alert-dismissible">
-					<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-					<h4>錯誤</h4>
-					{{ .AlertContent}}
-					</div>
-					{{end}}
 					<div>
+						{{if ne .AlertContent ""}}
+						<div class="alert alert-warning alert-dismissible">
+						<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+						<h4>錯誤</h4>
+						{{ .AlertContent}}
+						</div>
+						{{end}}
 						<div class="box box-"}>
 							<div class="box-header with-border"> 
 								<h3 class="box-title">編輯</h3>
 								<div class="box-tools">
 									<div class="btn-group pull-right" style="margin-right: 10px">
-										<a href="/admin/menu" class="btn btn-sm btn-default form-history-back"><i class="fa fa-arrow-left"></i>&nbsp;返回</a>
+										<a href={{.URLRoute.PreviousURL}} class="btn btn-sm btn-default form-history-back"><i class="fa fa-arrow-left"></i>&nbsp;返回</a>
 								</div>
 							</div>
 							<div class="box-body" style=" ">
@@ -231,6 +231,45 @@ const EditMenuTmpl = `
 																				class="form-control {{$data.Field}}" placeholder="{{$data.Placeholder}}">
 																		</div>
 																	{{end}}
+																{{else if eq $data.FormType.String "select"}}
+																	<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}[]"
+																	multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+																	{{if not .Editable}}disabled="disabled"{{end}}>
+																		{{range $key, $v := .FieldOptions }}
+																			<option value='{{$v.Value}}'>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																		{{end}}
+																	</select>
+																	<script>
+																		$("select.{{.Field}}").select2({{.OptionExt}});
+																	</script>
+																{{else if eq $data.FormType.String "select_single"}}
+																	<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}"
+																	data-multiple="false" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+																		{{if not .Editable}}disabled="disabled"{{end}}>
+																			<option></option>
+																			{{range $key, $v := .FieldOptions }}
+																				<option value='{{$v.Value}}' >{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																			{{end}}
+																	</select>
+																	<script>
+																		$("select.{{.Field}}").select2({{.OptionExt}});
+																	</script>
+																{{else if eq $data.FormType.String "iconpicker"}}
+																	<div class="input-group">
+																		<span class="input-group-addon"><i class="fa"></i></span>
+																			{{if eq $data.Value ""}}
+																				<input style="width: 140px" type="text" name="{{$data.Field}}" value="fa-bars"
+																					class="form-control {{.Field}}"
+																					placeholder="{{"Input Icon"}}">
+																			{{else}}
+																				<input style="width: 140px" type="text" name="{{$data.Field}}" value="{{$data.Value}}"
+																					class="form-control {{.Field}}"
+																					placeholder="{{"Input Icon"}}">
+																			{{end}}
+																	</div>
+																	<script>
+																		$('.{{.Field}}').iconpicker({placement: 'bottomLeft'});
+																	</script>
 																{{end}}
 															</div>
 														</div>	           

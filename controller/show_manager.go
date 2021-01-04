@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	"hilive/guard"
 	"hilive/models"
 	"hilive/modules/auth"
 	"hilive/modules/config"
@@ -10,7 +12,9 @@ import (
 	"hilive/modules/utils"
 	"hilive/views/alert"
 	"hilive/views/info"
+	"hilive/views/newform"
 	"html/template"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +28,68 @@ func (h *Handler) ShowManegerInfo(ctx *gin.Context) {
 
 	// 取得頁面資料後並執行前端模板語法
 	h.showTable(ctx, params, panel, h.Config.ManagerURL, "manager")
+}
+
+// ShowManagerNewForm 新增用戶前端頁面
+func (h *Handler) ShowManagerNewForm(ctx *gin.Context) {
+	param := guard.GetShowManagerNewForm(ctx)
+	h.showManagerNewForm(ctx, h.Alert, param.Panel, param.Param.GetRouteParamStr(), param.Prefix)
+}
+
+// showManagerNewForm 新增用戶前端頁面
+func (h *Handler) showManagerNewForm(ctx *gin.Context, alert string, panel table.Table, paramStr string, prefix string) {
+	// 取得middleware驗證後的user
+	user := auth.GetUserByMiddleware()
+	// GetMenuInformation 透過user取得menu資料表資訊
+	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(h.Config.ManagerNewURL)
+
+	// GetNewForm 處理並設置表單欄位細節資訊(允許增加的表單欄位)
+	formInfo := panel.GetNewForm(h.Services)
+
+	route := URLRoute{
+		URLPrefix:   config.Prefix(),
+		InfoURL:     config.Prefix() + "/info/" + prefix + paramStr,
+		NewURL:      config.Prefix() + "/new/" + prefix,
+		IndexURL:    config.Prefix() + h.Config.IndexURL,
+		PreviousURL: config.Prefix() + "/info/" + prefix + paramStr,
+	}
+	referer := ctx.Request.Header.Get("Referer")
+	if referer != "" && !isInfoURL(referer) && !isNewURL(referer, prefix) {
+		route.InfoURL = referer
+	}
+
+	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(newform.NewFormTmpl)
+	if err != nil {
+		fmt.Println(err)
+		panic("使用新建用戶、角色、權限模板發生錯誤")
+	}
+	if err := tmpl.Execute(ctx.Writer, struct {
+		FormID       string
+		User         models.UserModel
+		FormInfo     table.FormInfo
+		AlertContent string
+		Menu         *menu.Menu
+		Config       *config.Config
+		URLRoute     URLRoute
+		Token        string
+	}{
+		FormID:       utils.UUID(8),
+		User:         user,
+		FormInfo:     formInfo,
+		AlertContent: alert,
+		Menu:         menuInfo,
+		Config:       h.Config,
+		URLRoute:     route,
+		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
+	}); err == nil {
+		ctx.Status(http.StatusOK)
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
+	} else {
+		panic("使用新建用戶、角色、權限模板發生錯誤")
+	}
+	if alert != "" {
+		h.Alert = ""
+	}
 }
 
 // showManagerTable 取得頁面資料後並執行前端模板語法

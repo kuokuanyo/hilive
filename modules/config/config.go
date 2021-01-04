@@ -88,6 +88,12 @@ type Config struct {
 	// ManagerURL manager url
 	ManagerURL string `json:"manager_URL,omitempty" yaml:"manager_URL,omitempty" ini:"manager_URL,omitempty"`
 
+	// ManagerNewURL manager url
+	ManagerNewURL string `json:"manager_new_URL,omitempty" yaml:"manager_new_URL,omitempty" ini:"manager_new_URL,omitempty"`
+
+	// ManagerNewURLPost manager url
+	ManagerNewURLPost string `json:"manager_new_URL_post,omitempty" yaml:"manager_new_URL_post,omitempty" ini:"manager_new_URL_post,omitempty"`
+
 	// RolesURL roles url
 	RolesURL string `json:"roles_URL,omitempty" yaml:"roles_URL,omitempty" ini:"roles_URL,omitempty"`
 
@@ -162,6 +168,8 @@ func SetDefault(cfg Config) Config {
 	cfg.MenuDeleteURL = utils.SetDefault(cfg.MenuDeleteURL, "", "/menu/delete")
 	cfg.MenuNewURL = utils.SetDefault(cfg.MenuNewURL, "", "/menu/new")
 	cfg.ManagerURL = utils.SetDefault(cfg.ManagerURL, "", "/info/manager")
+	cfg.ManagerNewURL = utils.SetDefault(cfg.ManagerNewURL, "", "/info/manager/new")
+	cfg.ManagerNewURLPost = utils.SetDefault(cfg.ManagerNewURLPost, "", "/new/manager")
 	cfg.RolesURL = utils.SetDefault(cfg.RolesURL, "", "/info/roles")
 	cfg.PermissionURL = utils.SetDefault(cfg.PermissionURL, "", "/info/permission")
 
@@ -218,6 +226,8 @@ func (c *Config) ToMap() map[string]string {
 	m["menu_delete_url"] = c.MenuDeleteURL
 	m["menu_new_url"] = c.MenuNewURL
 	m["manager_url"] = c.ManagerURL
+	m["manager_new_url"] = c.ManagerNewURL
+	m["manager_new_url_post"] = c.ManagerNewURLPost
 	m["roles_url"] = c.RolesURL
 	m["permission_url"] = c.PermissionURL
 	m["store"] = c.Store.JSON()

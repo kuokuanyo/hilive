@@ -20,7 +20,7 @@ func main() {
 			Driver:     "mysql",
 		},
 		URLPrefix: "admin",
-		IndexURL:  "/menu",
+		IndexURL:  "/info/manager",
 		LoginURL: "/login",
 		Store: config.Store{
 			Path:   "./uploads",
