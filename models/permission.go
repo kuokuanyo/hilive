@@ -45,3 +45,16 @@ func (permission PermissionModel) MapToPermissionModel(m map[string]interface{})
 	permission.UpdatedAt, _ = m["updated_at"].(string)
 	return permission 
 }
+
+// IsSlugExist 檢查標誌是否已經存在
+func (permission PermissionModel) IsSlugExist(slug string, id string) bool {
+	if id == "" {
+		check, _ := permission.Table(permission.TableName).Where("slug", "=", slug).First()
+		return check != nil
+	}
+	check, _ := permission.Table(permission.TableName).
+		Where("slug", "=", slug).
+		Where("id", "!=", id).
+		First()
+	return check != nil
+}

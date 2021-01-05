@@ -282,6 +282,26 @@ const NewFormTmpl = `
 																			<div class="box-body">********</div>
 																		</div>
 																	{{end}}
+																{{else if eq .FormType.String "selectbox"}}
+																	<select class="form-control {{.Field}}" style="width: 100%;" name="{{.Field}}[]" multiple="multiple"
+																	data-placeholder="Input {{.Header}}" {{if not .Editable}}disabled="disabled"{{end}}>
+																	{{range  $key, $v := .FieldOptions }}
+																		<option value='{{$v.Value}}' >{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																	{{end}}
+																	</select>
+																	<script>
+																		$("select.{{.Field}}").bootstrapDualListbox({
+																			"infoText": "Showing all {0}",
+																			"infoTextEmpty": "Empty list",
+																			"infoTextFiltered": "{0} \/ {1}",
+																			"filterTextClear": "Show all",
+																			"filterPlaceHolder": "Filter"
+																		});
+																	</script>
+																{{else if eq .FormType.String "textarea"}}
+																	<textarea {{if .Must}}required="1"{{end}} name="{{.Field}}" class="form-control" rows="5"
+																	placeholder="{{.Placeholder}}"
+																	{{if not .Editable}}disabled="disabled"{{end}}>{{.Value}}</textarea>
 																{{end}}
 																{{if ne .HelpMsg ""}}
 																<span class="help-block">

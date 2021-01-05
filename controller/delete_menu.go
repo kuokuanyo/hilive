@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"hilive/modules/response"
 	"hilive/guard"
 	"hilive/models"
+	"hilive/modules/response"
 
 	"github.com/gin-gonic/gin"
 )

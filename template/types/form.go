@@ -3,9 +3,9 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	form2 "hilive/modules/form"
 	"hilive/modules/config"
 	"hilive/modules/db"
+	form2 "hilive/modules/form"
 	"hilive/modules/service"
 	"hilive/modules/utils"
 	"hilive/template/form"
@@ -16,6 +16,23 @@ import (
 // FormPostFunc 表單Post功能函式
 type FormPostFunc func(values form2.Values) error
 
+// PostFilterFunc 表單過濾函式
+type PostFilterFunc func(value PostFieldModel) interface{}
+
+// FieldModelValue []string
+type FieldModelValue []string
+
+// PostType uint8
+type PostType uint8
+
+// PostFieldModel 用於表單過濾
+type PostFieldModel struct {
+	ID       string
+	Value    FieldModelValue
+	Row      map[string]string
+	PostType PostType
+}
+
 // FormPanel 表單面板
 type FormPanel struct {
 	FieldList         FormFields
@@ -25,6 +42,8 @@ type FormPanel struct {
 	Description       string
 	InsertFunc        FormPostFunc
 	UpdateFunc        FormPostFunc
+	ValidatorFunc     FormPostFunc // 用於權限設置function
+	PostHookFunc      FormPostFunc // 用於權限設置function
 	primaryKey        primaryKey
 }
 
@@ -46,6 +65,7 @@ type FormField struct {
 	Hide                 bool            `json:"hide"`
 	Joins                Joins           `json:"-"`
 	FieldDisplay         FieldDisplay
+	PostFilterFunc       PostFilterFunc `json:"-"`
 	FieldOptions         FieldOptions
 	FieldOptionFromTable FieldOptionFromTable
 	OptionExt            template.JS   `json:"option_ext"`   // 不同欄位類型處理方式
@@ -231,6 +251,24 @@ func (f *FormPanel) SetDisplayFunc(filter FieldFilterFunc) *FormPanel {
 	return f
 }
 
+// SetPostFilterFunc 設置欄位過濾函式至PostFilterFunc
+func (f *FormPanel) SetPostFilterFunc(post PostFilterFunc) *FormPanel {
+	f.FieldList[f.curFieldListIndex].PostFilterFunc = post
+	return f
+}
+
+// SetPostValidatorFunc 設置函式至FormPanel.ValidatorFunc(用於權限，判斷設置參數是否有效)
+func (f *FormPanel) SetPostValidatorFunc(va FormPostFunc) *FormPanel {
+	f.ValidatorFunc = va
+	return f
+}
+
+// SetPostHookFunc 設置函式至FormPanel.PostHookFunc(用於權限，更新權限的時間)
+func (f *FormPanel) SetPostHookFunc(fn FormPostFunc) *FormPanel {
+	f.PostHookFunc = fn
+	return f
+}
+
 // FieldOptionExt 處理不同欄位類型後設置至FormField.OptionExt
 func (f *FormPanel) FieldOptionExt(m map[string]interface{}) *FormPanel {
 	if m == nil {
@@ -375,4 +413,9 @@ func (f FieldOptions) SetSelected(val interface{}, labels []template.HTML) Field
 		}
 	}
 	return f
+}
+
+// Value return FieldModelValue[0]
+func (r FieldModelValue) Value() string {
+	return r[0]
 }

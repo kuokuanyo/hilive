@@ -20,7 +20,7 @@ const AlertTmpl = `
 	<body class="skin-black sidebar-mini">
 		<div class="wrapper">
 			<header class="main-header">
-				<a href={{.URLRoute.IndexURL}} class="logo">
+				<a href={{.IndexURL}} class="logo">
 					<span class="logo-mini">{{.Config.MiniLogo}}</span>
 					<span class="logo-lg">{{.Config.Logo}}</span>
 				</a>
@@ -81,7 +81,7 @@ const AlertTmpl = `
 										</li>
 										<li class="user-footer">
 											<div class="pull-right">
-												<a href="{{.URLRoute.URLPrefix}}/logout"
+												<a href="{{.URLPrefix}}/logout"
 												class="no-pjax btn btn-default btn-flat">{{"登出"}}</a>
 											</div>
 										</li>
@@ -95,7 +95,7 @@ const AlertTmpl = `
 			<aside class="main-sidebar">
 				<section class="sidebar" style="height: auto;">
 					<ul class="sidebar-menu" data-widget="tree">
-						{{$URLPrefix := .URLRoute.URLPrefix}}
+						{{$URLPrefix := .URLPrefix}}
 						{{range $key, $list := .Menu.List }}
 							{{if eq (len $list.ChildrenList) 0}}
 								{{if $list.Header}}
@@ -173,20 +173,11 @@ const AlertTmpl = `
 				<script src="/admin/assets/dist/js/form.min.f8678914e9.js"></script>
 				<script src="/admin/assets/dist/js/treeview.min.7780d3bb0f.js"></script>
 				<script src="/admin/assets/dist/js/tree.min.e1faf8b7de.js"></script>
-				<section class="content-header">
-					<h1>
-						菜單
-						<small>編輯菜單</small>
-					</h1>
-					<ol class="breadcrumb" style="margin-right: 30px;">
-						<li><a href={{.Config.IndexUrl}}><i class="fa fa-dashboard"></i> 首頁</a></li>
-					</ol>
-				</section>
 				<section class="content">
 					{{if ne .AlertContent ""}}
 					<div class="alert alert-warning alert-dismissible">
 					<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-					<h4>錯誤</h4>
+					<h4>發生錯誤</h4>
 					{{ .AlertContent}}
 					</div>
 					{{end}}

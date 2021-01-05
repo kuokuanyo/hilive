@@ -64,7 +64,7 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	}
 
 	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuEditURL)
+	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
 }
 
 // ShowEditMenu edit menu GET功能
@@ -75,10 +75,6 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 	menuInfo := menu.GetMenuInformation(user, h.Conn)
 
 	if ctx.Query("id") == "" {
-		route := URLRoute{
-			IndexURL:  config.Prefix() + h.Config.IndexURL,
-			URLPrefix: config.Prefix(),
-		}
 		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
 		tmpl.Execute(ctx.Writer, struct {
 			User         models.UserModel
@@ -86,12 +82,15 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 			AlertContent string
 			Config       *config.Config
 			URLRoute     URLRoute
+			IndexURL     string
+			URLPrefix    string
 		}{
 			User:         user,
 			Menu:         menuInfo,
 			AlertContent: "請填寫id參數",
 			Config:       h.Config,
-			URLRoute:     route,
+			IndexURL:     config.Prefix() + h.Config.IndexURL,
+			URLPrefix:    config.Prefix(),
 		})
 		return
 	}
@@ -99,10 +98,6 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 	formInfo, err := table.GetMenuFormPanel(h.Conn).
 		GetDataWithID(parameter.DefaultParameters().SetFieldPKByJoinParam(ctx.Query("id")), h.Services)
 	if err != nil {
-		route := URLRoute{
-			IndexURL:  config.Prefix() + h.Config.IndexURL,
-			URLPrefix: config.Prefix(),
-		}
 		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
 		tmpl.Execute(ctx.Writer, struct {
 			User         models.UserModel
@@ -110,12 +105,15 @@ func (h *Handler) ShowEditMenu(ctx *gin.Context) {
 			AlertContent string
 			Config       *config.Config
 			URLRoute     URLRoute
+			IndexURL     string
+			URLPrefix    string
 		}{
 			User:         user,
 			Menu:         menuInfo,
 			AlertContent: err.Error(),
 			Config:       h.Config,
-			URLRoute:     route,
+			IndexURL:     config.Prefix() + h.Config.IndexURL,
+			URLPrefix:    config.Prefix(),
 		})
 	}
 	h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, h.Alert)

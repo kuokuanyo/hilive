@@ -50,7 +50,7 @@ func (h *Handler) NewMenu(ctx *gin.Context) {
 	// 增加MaxOrder
 	menu.GetMenuInformation(user, h.Conn).MaxOrder++
 	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuNewURL)
+	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
 }
 
 // ShowNewMenu new menu GET功能

@@ -3,6 +3,7 @@ package guard
 import (
 	"hilive/models"
 	"hilive/modules/auth"
+	"hilive/modules/config"
 	"hilive/modules/menu"
 	"hilive/views/alert"
 	"html/template"
@@ -19,10 +20,10 @@ type MenuDeleteParam struct {
 func (g *Guard) MenuDelete(ctx *gin.Context) {
 	id := ctx.Query("id")
 	if id == "" {
-		urlPrefix := "/" + g.Config.URLPrefix
 		user := auth.GetUserByMiddleware()
 		// GetMenuInformation 透過user取得menu資料表資訊
 		menuInfo := menu.GetMenuInformation(user, g.Conn)
+
 		tmpl, err := template.New("").Funcs(template.FuncMap{
 			"isLinkURL": func(s string) bool {
 				return (len(s) > 7 && s[:7] == "http://") || (len(s) > 8 && s[:8] == "https://")
@@ -35,18 +36,16 @@ func (g *Guard) MenuDelete(ctx *gin.Context) {
 			User         models.UserModel
 			Menu         *menu.Menu
 			AlertContent string
-			MiniLogo     template.HTML
-			Logo         template.HTML
-			IndexURL     string
+			Config       *config.Config
 			URLPrefix    string
+			IndexURL     string
 		}{
 			User:         user,
 			Menu:         menuInfo,
 			AlertContent: "刪除菜單需要設置id參數",
-			MiniLogo:     g.Config.MiniLogo,
-			Logo:         g.Config.Logo,
-			IndexURL:     urlPrefix + g.Config.IndexURL,
-			URLPrefix:    urlPrefix,
+			Config:       g.Config,
+			URLPrefix:    config.Prefix(),
+			IndexURL:     config.Prefix() + g.Config.IndexURL,
 		})
 		ctx.Abort()
 		return

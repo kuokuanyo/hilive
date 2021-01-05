@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"hilive/guard"
 	"hilive/models"
 	"hilive/modules/auth"
@@ -33,11 +32,11 @@ func (h *Handler) ShowManegerInfo(ctx *gin.Context) {
 // ShowManagerNewForm 新增用戶前端頁面
 func (h *Handler) ShowManagerNewForm(ctx *gin.Context) {
 	param := guard.GetShowManagerNewForm(ctx)
-	h.showManagerNewForm(ctx, h.Alert, param.Panel, param.Param.GetRouteParamStr(), param.Prefix)
+	h.showNewForm(ctx, h.Alert, param.Panel, param.Param.GetRouteParamStr(), param.Prefix)
 }
 
-// showManagerNewForm 新增用戶前端頁面
-func (h *Handler) showManagerNewForm(ctx *gin.Context, alert string, panel table.Table, paramStr string, prefix string) {
+// showNewForm 新增功能前端頁面
+func (h *Handler) showNewForm(ctx *gin.Context, alert string, panel table.Table, paramStr string, prefix string) {
 	// 取得middleware驗證後的user
 	user := auth.GetUserByMiddleware()
 	// GetMenuInformation 透過user取得menu資料表資訊
@@ -60,7 +59,6 @@ func (h *Handler) showManagerNewForm(ctx *gin.Context, alert string, panel table
 
 	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(newform.NewFormTmpl)
 	if err != nil {
-		fmt.Println(err)
 		panic("使用新建用戶、角色、權限模板發生錯誤")
 	}
 	if err := tmpl.Execute(ctx.Writer, struct {

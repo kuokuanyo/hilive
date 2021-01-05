@@ -100,7 +100,7 @@ func SetCookie(ctx *gin.Context, user models.UserModel, conn db.Connection) erro
 	}
 
 	// add cookie
-	ses.Context.SetCookie(ses.Cookie, ses.Sid, config.GetSessionLifeTime(), "/", "localhost", false, true)
+	ses.Context.SetCookie(ses.Cookie, ses.Sid, config.GetSessionLifeTime(), "/", "", false, true)
 	return nil
 }
 

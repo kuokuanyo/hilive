@@ -21,7 +21,7 @@ func main() {
 		},
 		URLPrefix: "admin",
 		IndexURL:  "/info/manager",
-		LoginURL: "/login",
+		LoginURL:  "/login",
 		Store: config.Store{
 			Path:   "./uploads",
 			Prefix: "uploads",
