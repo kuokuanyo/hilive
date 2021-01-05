@@ -56,9 +56,6 @@ type Table interface {
 	// 設置主鍵取得InformationPanel
 	GetInfo() *types.InformationPanel
 
-	// GetForm 取得表單資訊
-	GetForm() *types.FormPanel
-
 	// 設置主鍵並取得FormPanel
 	GetFormPanel() *types.FormPanel
 
@@ -101,11 +98,6 @@ func (base *BaseTable) GetPrimaryKey() PrimaryKey {
 // GetInfo 設置主鍵取得InformationPanel
 func (base *BaseTable) GetInfo() *types.InformationPanel {
 	return base.Informatoin.SetPrimaryKey(base.PrimaryKey.Name, base.PrimaryKey.Type)
-}
-
-// GetForm 設置主鍵取得FormPanel
-func (base *BaseTable) GetForm() *types.FormPanel {
-	return base.Form.SetPrimaryKey(base.PrimaryKey.Name, base.PrimaryKey.Type)
 }
 
 // GetFormPanel 設置主鍵並取得FormPanel

@@ -5,6 +5,7 @@ import (
 	"hilive/modules/db"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // Item 為資料表menu的欄位
@@ -109,6 +110,10 @@ func (menu *Menu) SetActiveClass(path string) *Menu {
 			}
 			menu.List[i].Active = ""
 			menu.List[i].ChildrenList[j].Active = ""
+		}
+		if strings.Contains(path, menu.List[i].URL) {
+			menu.List[i].Active = "active"
+			return menu
 		}
 	}
 	return menu

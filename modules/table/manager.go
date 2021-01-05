@@ -22,15 +22,15 @@ func GetManagerFormPanel(conn db.Connection) (managerTable Table) {
 	// 建立BaseTable
 	managerTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 	// 取得FormPanel
-	formList := managerTable.GetForm()
+	formList := managerTable.GetFormPanel()
 
 	// 增加欄位資訊
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowEdit().FieldNotAllowAdd()
-	formList.AddField("UserID", "userid", db.Varchar, form.Text).FieldNotAllowEdit()
+	formList.AddField("UserID", "userid", db.Varchar, form.Text).FieldNotAllowEdit().SetFieldMust().SetFieldHelpMsg(template.HTML("LINE ID"))
 	formList.AddField("用戶名稱", "username", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("用戶照片", "picture", db.Varchar, form.Text).FieldNotAllowEdit()
 	formList.AddField("電話號碼", "phone", db.Varchar, form.Text).
-		SetFieldHelpMsg(template.HTML("用來登入")).SetFieldMust()
+		SetFieldHelpMsg(template.HTML("用途: 登入")).SetFieldMust()
 	formList.AddField("信箱", "email", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("角色", "role_id", db.Varchar, form.Select).
 		SetFieldOptionFromTable("roles", "slug", "id").
@@ -70,6 +70,8 @@ func GetManagerFormPanel(conn db.Connection) (managerTable Table) {
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
 			return ""
 		})
+	formList.AddField("更新時間", "updated_at", db.Timestamp, form.Default).FieldNotAllowAdd()
+	formList.AddField("建立時間", "created_at", db.Timestamp, form.Default).FieldNotAllowAdd()
 	formList.SetTable("users").SetTitle("用戶").SetDescription("新增用戶")
 
 	// 設置表單需要使用的更新函式

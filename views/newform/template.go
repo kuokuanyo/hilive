@@ -283,6 +283,11 @@ const NewFormTmpl = `
 																		</div>
 																	{{end}}
 																{{end}}
+																{{if ne .HelpMsg ""}}
+																<span class="help-block">
+																	<i class="fa fa-info-circle"></i>&nbsp;{{.HelpMsg}}
+																</span>
+																{{end}}
 															</div>
 														</div>	           
 													{{end}}
