@@ -332,8 +332,8 @@ func (i *InformationPanel) FieldJoin(join Join) *InformationPanel {
 	return i
 }
 
-// FieldDisplayFunc 設置display function
-func (i *InformationPanel) FieldDisplayFunc(filter FieldFilterFunc) *InformationPanel {
+// SetDisplayFunc 設置display function
+func (i *InformationPanel) SetDisplayFunc(filter FieldFilterFunc) *InformationPanel {
 	i.FieldList[i.curFieldListIndex].FieldDisplay.DisplayFunc = filter
 	return i
 }

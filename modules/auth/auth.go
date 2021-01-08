@@ -59,7 +59,7 @@ func ConvertInterfaceToTokenService(s interface{}) *TokenService {
 
 // Check 檢查登入資訊並取得用戶角色權限可用menu
 func Check(password string, phone string, conn db.Connection) (user models.UserModel, ok bool) {
-	user = models.DefaultUserModel("users").SetConn(conn).FindByPhone(phone)
+	user = models.DefaultUserModel().SetConn(conn).FindByPhone(phone)
 	// 檢查是否為空
 	if user.ID == int64(0) {
 		ok = false

@@ -10,54 +10,126 @@ import (
 	"hilive/modules/table"
 	"hilive/modules/utils"
 	"hilive/views/alert"
+	"hilive/views/form"
 	"hilive/views/info"
-	"hilive/views/newform"
 	"html/template"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ShowManegerInfo 前端資訊頁面
-func (h *Handler) ShowManegerInfo(ctx *gin.Context) {
-	// GetManagerInfoPanel 取得使用者資訊面板
-	panel := table.GetManagerInfoPanel(h.Conn)
+// ShowEditForm 編輯資料前端頁面
+func (h *Handler) ShowEditForm(ctx *gin.Context) {
+	param := guard.GetShowEditForm(ctx)
+
+	h.showEditForm(ctx, "", param.Panel, param.Param, param.Prefix)
+}
+
+// ShowInfo 前端資訊頁面
+func (h *Handler) ShowInfo(ctx *gin.Context) {
+	prefix := ctx.Param("__prefix")
+	// GetTable 取得table(面板資訊、表單資訊
+	panel := h.GetTable(ctx, prefix)
 	// GetParam 設置頁面資訊
 	params := parameter.GetParam(ctx.Request.URL, panel.GetInfo().DefaultPageSize)
 
 	// 取得頁面資料後並執行前端模板語法
-	h.showTable(ctx, params, panel, h.Config.ManagerURL, "manager")
+	h.showTable(ctx, params, panel, "/info/"+prefix, prefix)
 }
 
-// ShowManagerNewForm 新增用戶前端頁面
-func (h *Handler) ShowManagerNewForm(ctx *gin.Context) {
-	param := guard.GetShowManagerNewForm(ctx)
+// ShowNewForm 新增用戶前端頁面
+func (h *Handler) ShowNewForm(ctx *gin.Context) {
+	param := guard.GetShowNewForm(ctx)
 	h.showNewForm(ctx, h.Alert, param.Panel, param.Param.GetRouteParamStr(), param.Prefix)
 }
 
-// showNewForm 新增功能前端頁面
+// showEditForm 編輯頁面模板語法
+func (h *Handler) showEditForm(ctx *gin.Context, alertMsg string, panel table.Table, param parameter.Parameters, prefix string) {
+	// 取得middleware驗證後的user
+	user := auth.GetUserByMiddleware()
+	// GetMenuInformation 透過user取得menu資料表資訊
+	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass("/info/" + prefix + "/edit")
+
+	// GetDataWithID 透過id取得資料並將值、預設值設置至BaseTable.Form.FormFields
+	formInfo, err := panel.GetDataWithID(param, h.Services)
+	if err != nil {
+		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
+		tmpl.Execute(ctx.Writer, struct {
+			User         models.UserModel
+			Menu         *menu.Menu
+			AlertContent string
+			Config       *config.Config
+			URLRoute     URLRoute
+			IndexURL     string
+			URLPrefix    string
+		}{
+			User:         user,
+			Menu:         menuInfo,
+			AlertContent: err.Error(),
+			Config:       h.Config,
+			IndexURL:     config.Prefix() + h.Config.IndexURL,
+			URLPrefix:    config.Prefix(),
+		})
+	}
+
+	route := URLRoute{
+		URLPrefix:   config.Prefix(),
+		InfoURL:     config.Prefix() + "/edit/" + prefix,
+		IndexURL:    config.Prefix() + h.Config.IndexURL,
+		PreviousURL: config.Prefix() + "/info/" + prefix + param.DeletePK().DeleteField("__edit_pk").GetRouteParamStr(),
+	}
+
+	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(form.FormTmpl)
+	if err != nil {
+		panic("使用編輯模板發生錯誤")
+	}
+	if err := tmpl.Execute(ctx.Writer, struct {
+		FormID       string
+		User         models.UserModel
+		FormInfo     table.FormInfo
+		AlertContent string
+		Menu         *menu.Menu
+		Config       *config.Config
+		URLRoute     URLRoute
+		Token        string
+	}{
+		FormID:       utils.UUID(8),
+		User:         user,
+		FormInfo:     formInfo,
+		AlertContent: alertMsg,
+		Menu:         menuInfo,
+		Config:       h.Config,
+		URLRoute:     route,
+		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
+	}); err == nil {
+		ctx.Status(http.StatusOK)
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
+	} else {
+		panic("使用編輯用戶、角色、權限模板發生錯誤")
+	}
+	if alertMsg != "" {
+		h.Alert = ""
+	}
+}
+
+// showNewForm 新增功能模板語法
 func (h *Handler) showNewForm(ctx *gin.Context, alert string, panel table.Table, paramStr string, prefix string) {
 	// 取得middleware驗證後的user
 	user := auth.GetUserByMiddleware()
 	// GetMenuInformation 透過user取得menu資料表資訊
-	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(h.Config.ManagerNewURL)
+	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass("/info/" + prefix + "/new")
 
 	// GetNewForm 處理並設置表單欄位細節資訊(允許增加的表單欄位)
 	formInfo := panel.GetNewForm(h.Services)
 
 	route := URLRoute{
 		URLPrefix:   config.Prefix(),
-		InfoURL:     config.Prefix() + "/info/" + prefix + paramStr,
-		NewURL:      config.Prefix() + "/new/" + prefix,
+		InfoURL:     config.Prefix() + "/new/" + prefix,
 		IndexURL:    config.Prefix() + h.Config.IndexURL,
 		PreviousURL: config.Prefix() + "/info/" + prefix + paramStr,
 	}
-	referer := ctx.Request.Header.Get("Referer")
-	if referer != "" && !isInfoURL(referer) && !isNewURL(referer, prefix) {
-		route.InfoURL = referer
-	}
 
-	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(newform.NewFormTmpl)
+	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(form.FormTmpl)
 	if err != nil {
 		panic("使用新建用戶、角色、權限模板發生錯誤")
 	}
@@ -90,13 +162,14 @@ func (h *Handler) showNewForm(ctx *gin.Context, alert string, panel table.Table,
 	}
 }
 
-// showManagerTable 取得頁面資料後並執行前端模板語法
+// showTable 取得頁面資料後並執行前端模板語法
 func (h *Handler) showTable(ctx *gin.Context, params parameter.Parameters, panel table.Table, url string, prefix string) {
 	// 取得middleware驗證後的user
 	user := auth.GetUserByMiddleware()
 	// GetMenuInformation 透過user取得menu資料表資訊
 	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(url)
 
+	// GetTableData 取得前端頁面需要的資訊(每一筆資料資訊、欄位資訊、可過濾欄位資訊...等)，並檢查是否有權限訪問URL
 	panel, panelInfo, urls, err := h.GetTableData(ctx, params, panel, url, prefix)
 	if err != nil {
 		route := URLRoute{

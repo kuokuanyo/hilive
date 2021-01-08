@@ -110,12 +110,12 @@ func (h *Handler) Signup(ctx *gin.Context) {
 		return
 	}
 
-	userPhone := models.DefaultUserModel("users").SetConn(h.Conn).FindByPhone(phone)
+	userPhone := models.DefaultUserModel().SetConn(h.Conn).FindByPhone(phone)
 	if userPhone.ID != int64(0) {
 		response.BadRequest(ctx, "電話號碼已被註冊過")
 		return
 	}
-	UerEmail := models.DefaultUserModel("users").SetConn(h.Conn).FindByEmail(email)
+	UerEmail := models.DefaultUserModel().SetConn(h.Conn).FindByEmail(email)
 	if UerEmail.ID != int64(0) {
 		response.BadRequest(ctx, "信箱已被註冊過")
 		return
@@ -129,7 +129,7 @@ func (h *Handler) Signup(ctx *gin.Context) {
 	}
 
 	// 新增註冊資料並增加角色權限
-	user, err := models.DefaultUserModel("users").SetConn(h.Conn).
+	user, err := models.DefaultUserModel().SetConn(h.Conn).
 		AddUser("testUserID", username, phone, email, string(hash[:]))
 	if err != nil {
 		response.BadRequest(ctx, "增加會員資料發生錯誤")

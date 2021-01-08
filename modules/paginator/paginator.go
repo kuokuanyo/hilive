@@ -29,6 +29,7 @@ func GetPaginatorInformation(size int, params parameter.Parameters) Paginator {
 
 	// 判斷總共頁數
 	totalPage := int(math.Ceil(float64(size) / float64(pageSizeInt)))
+
 	// 取得第一頁的url(不包含pagesize)
 	paginator.URL = params.URLPath + params.GetRouteParamWithoutPageSize("1")
 	paginator.Total = strconv.Itoa(size)

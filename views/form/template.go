@@ -1,7 +1,7 @@
-package menuviews
+package form
 
-// NewMenuTmpl 新建菜單模板
-const NewMenuTmpl = `
+// NewFormTmpl 新增表單模板
+const FormTmpl = `
 <html>
 	<head>
 		<style id="ace-monokai">.ace-monokai .ace_gutter {background: #2F3129;color: #8F908A}.ace-monokai .ace_print-margin {width: 1px;background: #555651}.ace-monokai {background-color: #272822;color: #F8F8F2}.ace-monokai .ace_cursor {color: #F8F8F0}.ace-monokai .ace_marker-layer .ace_selection {background: #49483E}.ace-monokai.ace_multiselect .ace_selection.ace_start {box-shadow: 0 0 3px 0px #272822;}.ace-monokai .ace_marker-layer .ace_step {background: rgb(102, 82, 0)}.ace-monokai .ace_marker-layer .ace_bracket {margin: -1px 0 0 -1px;border: 1px solid #49483E}.ace-monokai .ace_marker-layer .ace_active-line {background: #202020}.ace-monokai .ace_gutter-active-line {background-color: #272727}.ace-monokai .ace_marker-layer .ace_selected-word {border: 1px solid #49483E}.ace-monokai .ace_invisible {color: #52524d}.ace-monokai .ace_entity.ace_name.ace_tag,.ace-monokai .ace_keyword,.ace-monokai .ace_meta.ace_tag,.ace-monokai .ace_storage {color: #F92672}.ace-monokai .ace_punctuation,.ace-monokai .ace_punctuation.ace_tag {color: #fff}.ace-monokai .ace_constant.ace_character,.ace-monokai .ace_constant.ace_language,.ace-monokai .ace_constant.ace_numeric,.ace-monokai .ace_constant.ace_other {color: #AE81FF}.ace-monokai .ace_invalid {color: #F8F8F0;background-color: #F92672}.ace-monokai .ace_invalid.ace_deprecated {color: #F8F8F0;background-color: #AE81FF}.ace-monokai .ace_support.ace_constant,.ace-monokai .ace_support.ace_function {color: #66D9EF}.ace-monokai .ace_fold {background-color: #A6E22E;border-color: #F8F8F2}.ace-monokai .ace_storage.ace_type,.ace-monokai .ace_support.ace_class,.ace-monokai .ace_support.ace_type {font-style: italic;color: #66D9EF}.ace-monokai .ace_entity.ace_name.ace_function,.ace-monokai .ace_entity.ace_other,.ace-monokai .ace_entity.ace_other.ace_attribute-name,.ace-monokai .ace_variable {color: #A6E22E}.ace-monokai .ace_variable.ace_parameter {font-style: italic;color: #FD971F}.ace-monokai .ace_string {color: #E6DB74}.ace-monokai .ace_comment {color: #75715E}.ace-monokai .ace_indent-guide {background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQImWPQ0FD0ZXBzd/wPAAjVAoxeSgNeAAAAAElFTkSuQmCC) right repeat-y}
@@ -175,8 +175,8 @@ const NewMenuTmpl = `
 				<script src="/admin/assets/dist/js/tree.min.e1faf8b7de.js"></script>
 				<section class="content-header">
 					<h1>
-						菜單
-						<small>新建菜單</small>
+						{{.FormInfo.Title}}
+						<small>{{.FormInfo.Description}}</small>
 					</h1>
 					<ol class="breadcrumb" style="margin-right: 30px;">
 						<li><a href={{.URLRoute.IndexURL}}><i class="fa fa-dashboard"></i> 首頁</a></li>
@@ -205,7 +205,7 @@ const NewMenuTmpl = `
 									<div class="box-body">
 										<div class="box-body">
 											<div class="fields-group">
-												{{range $key, $data := .Content}}
+												{{range $key, $data := .FormInfo.FieldList}}
 													{{if $data.Hide}}
 														<input type="hidden" name="{{$data.Field}}" value='{{$data.Value}}'>
 													{{else}}
@@ -235,7 +235,7 @@ const NewMenuTmpl = `
 																	multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
 																	{{if not .Editable}}disabled="disabled"{{end}}>
 																		{{range $key, $v := .FieldOptions }}
-																			<option value='{{$v.Value}}'>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																			<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
 																		{{end}}
 																	</select>
 																		<script>
@@ -247,7 +247,7 @@ const NewMenuTmpl = `
 																		{{if not .Editable}}disabled="disabled"{{end}}>
 																			<option></option>
 																			{{range $key, $v := .FieldOptions }}
-																				<option value='{{$v.Value}}' >{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																				<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
 																			{{end}}
 																	</select>
 																	<script>
@@ -269,6 +269,44 @@ const NewMenuTmpl = `
 																	<script>
 																		$('.{{.Field}}').iconpicker({placement: 'bottomLeft'});
 																	</script>
+																{{else if eq $data.FormType.String "password"}}
+																	{{if .Editable}}
+																		<div class="input-group">
+																			<span class="input-group-addon"><i class="fa fa-eye-slash"></i></span>
+																			<input {{if .Must}}required="1"{{end}} type="password" name="{{$data.Field}}"
+																				value="{{$data.Value}}"
+																				class="form-control {{.Field}}" placeholder="{{.Placeholder}}">
+																		</div>
+																	{{else}}
+																		<div class="box box-solid box-default no-margin">
+																			<div class="box-body">********</div>
+																		</div>
+																	{{end}}
+																{{else if eq .FormType.String "selectbox"}}
+																	<select class="form-control {{.Field}}" style="width: 100%;" name="{{.Field}}[]" multiple="multiple"
+																	data-placeholder="Input {{.Header}}" {{if not .Editable}}disabled="disabled"{{end}}>
+																	{{range  $key, $v := .FieldOptions }}
+																		<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																	{{end}}
+																	</select>
+																	<script>
+																		$("select.{{.Field}}").bootstrapDualListbox({
+																			"infoText": "Showing all {0}",
+																			"infoTextEmpty": "Empty list",
+																			"infoTextFiltered": "{0} \/ {1}",
+																			"filterTextClear": "Show all",
+																			"filterPlaceHolder": "Filter"
+																		});
+																	</script>
+																{{else if eq .FormType.String "textarea"}}
+																	<textarea {{if .Must}}required="1"{{end}} name="{{.Field}}" class="form-control" rows="5"
+																	placeholder="{{.Placeholder}}"
+																	{{if not .Editable}}disabled="disabled"{{end}}>{{.Value}}</textarea>
+																{{end}}
+																{{if ne .HelpMsg ""}}
+																<span class="help-block">
+																	<i class="fa fa-info-circle"></i>&nbsp;{{.HelpMsg}}
+																</span>
 																{{end}}
 															</div>
 														</div>	           

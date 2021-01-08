@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"hilive/modules/db"
+	"hilive/modules/form"
 	"hilive/modules/paginator"
 	"hilive/modules/parameter"
 	"hilive/modules/service"
@@ -67,6 +68,9 @@ type Table interface {
 
 	// GetData 從資料庫取得頁面需要顯示的資料，回傳每一筆資料資訊、欄位資訊、可過濾欄位資訊、分頁資訊...等
 	GetData(params parameter.Parameters, services service.List) (PanelInfo, error)
+
+	// InsertData 插入資料
+	InsertData(dataList form.Values) error
 }
 
 // DefaultBaseTable 建立預設的BaseTable(同時也是Table(interface))
@@ -158,6 +162,17 @@ func (base *BaseTable) GetData(params parameter.Parameters, services service.Lis
 	return base.getDataFromDatabase(params, services)
 }
 
+// InsertData 插入資料
+func (base *BaseTable) InsertData(dataList form.Values) error {
+	if base.Form.InsertFunc != nil {
+		err := base.Form.InsertFunc(dataList)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // -----BaseTable的所有Table方法-----end
 
 // GetSQLByService 設置db.SQL(struct)的Connection、CRUD
@@ -220,6 +235,7 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 	// 取得所有欄位
 	columns, _ := base.getColumns(base.Informatoin.Table, services)
 
+	// getFieldInformationAndJoinOrderAndFilterForm 取得欄位資訊、join的語法及table、可過濾欄位資訊
 	fieldList, fields, joinFields, joins, joinTables, filterForm := base.getFieldInformationAndJoinOrderAndFilterForm(params, columns)
 
 	// 加上主鍵
@@ -245,6 +261,9 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 		if wheres != "" {
 			wheres = " where " + wheres
 		}
+		fmt.Println(wheres)
+		fmt.Println(whereArgs)
+		fmt.Println(existKeys)
 
 		if connection.Name() == "mysql" {
 			pageSizeInt, _ := strconv.Atoi(params.PageSize)
@@ -263,6 +282,7 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 	// sql 語法
 	queryCmd := fmt.Sprintf(queryStatement, allFields, base.Informatoin.Table, joins, wheres, groupBy,
 		base.Informatoin.Table, params.SortField, params.SortType)
+	fmt.Println(queryCmd)
 
 	res, err := connection.Query(queryCmd, args...)
 	if err != nil {

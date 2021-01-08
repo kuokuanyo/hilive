@@ -8,6 +8,7 @@ import (
 	"hilive/modules/config"
 	"hilive/modules/db"
 	"hilive/modules/service"
+	"hilive/modules/table"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,17 +55,26 @@ func (eng *Engine) InitDatabase(cfg config.Config) *Engine {
 		Tokens: make(auth.CSRFToken, 0),
 	})
 
+	// 設置頁面資訊及表單資訊map
+	tablelist := map[string]func(conn db.Connection) table.Table{
+		"manager":    table.GetManagerPanel,
+		"roles":      table.GetRolesPanel,
+		"permission": table.GetPermissionPanel,
+	}
+
 	eng.handler = controller.Handler{
-		Config:   eng.config,
-		Conn:     eng.GetConnectionByDriver(),
-		Gin:      r,
-		Services: eng.Services,
+		Config:        eng.config,
+		Conn:          eng.GetConnectionByDriver(),
+		Gin:           r,
+		Services:      eng.Services,
+		TablelList: tablelist,
 	}
 
 	eng.guard = guard.Guard{
-		Conn:     eng.GetConnectionByDriver(),
-		Services: eng.Services,
-		Config:   eng.config,
+		Conn:          eng.GetConnectionByDriver(),
+		Services:      eng.Services,
+		Config:        eng.config,
+		TablelList: tablelist,
 	}
 
 	// 設置TableName、Conn
@@ -118,18 +128,12 @@ func (eng *Engine) InitRouter() *Engine {
 	authRoute.POST(eng.config.MenuEditURL, eng.guard.MenuEdit, eng.handler.EditMenu)
 	authRoute.POST(eng.config.MenuDeleteURL, eng.guard.MenuDelete, eng.handler.DeleteMenu)
 
-	// 使用者
-	authRoute.GET(eng.config.ManagerURL, eng.handler.ShowManegerInfo)
-	authRoute.GET(eng.config.ManagerNewURL, eng.guard.ShowManagerNewForm, eng.handler.ShowManagerNewForm)
-	authRoute.GET(eng.config.ManagerEditURL, eng.guard.ShowManagerForm)
-
-	// 角色
-	authRoute.GET(eng.config.RolesURL, eng.handler.ShowRolesInfo)
-	authRoute.GET(eng.config.RolesNewURL, eng.guard.ShowRolesNewForm, eng.handler.ShowRolesNewForm)
-
-	// 權限
-	authRoute.GET(eng.config.PermissionURL, eng.handler.ShowPermissionInfo)
-	authRoute.GET(eng.config.PermissionNewURL, eng.guard.ShowPermissionNewForm, eng.handler.ShowPermissionNewForm)
+	authPrefixRoute := router.Use(auth.DefaultInvoker(eng.handler.Conn).Middleware(eng.handler.Conn), eng.guard.CheckPrefix)
+	// 使用者、角色、權限
+	authPrefixRoute.GET("/info/:__prefix", eng.handler.ShowInfo)
+	authPrefixRoute.GET("/info/:__prefix/new", eng.guard.ShowNewForm, eng.handler.ShowNewForm)
+	authPrefixRoute.GET("/info/:__prefix/edit", eng.guard.ShowEditForm, eng.handler.ShowEditForm)
+	authPrefixRoute.POST("/new/:__prefix", eng.guard.NewForm, eng.handler.NewForm)
 
 	return eng
 }

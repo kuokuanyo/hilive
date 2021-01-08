@@ -10,8 +10,8 @@ import (
 	"strconv"
 )
 
-// GetMenuFormPanel 取得menu表單面板資訊
-func GetMenuFormPanel(conn db.Connection) (menuTable Table) {
+// GetMenuPanel 取得menu表單資訊
+func GetMenuPanel(conn db.Connection) (menuTable Table) {
 	// 建立BaseTable
 	menuTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 

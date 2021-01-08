@@ -416,7 +416,7 @@ const MenuTmpl = `
 																				multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
 																				{{if not .Editable}}disabled="disabled"{{end}}>
 																			{{range $key, $v := .FieldOptions }}
-																				<option value='{{$v.Value}}'>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																				<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
 																			{{end}}
     																		</select>
 																			<script>
@@ -428,7 +428,7 @@ const MenuTmpl = `
 																			{{if not .Editable}}disabled="disabled"{{end}}>
 																				<option></option>
 																				{{range $key, $v := .FieldOptions }}
-																					<option value='{{$v.Value}}' >{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																					<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
 																				{{end}}
 																			</select>
 																			<script>

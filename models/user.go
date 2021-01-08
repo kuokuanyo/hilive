@@ -32,8 +32,8 @@ type UserModel struct {
 }
 
 // DefaultUserModel 預設UserModel
-func DefaultUserModel(tablename string) UserModel {
-	return UserModel{Base: Base{TableName: tablename}}
+func DefaultUserModel() UserModel {
+	return UserModel{Base: Base{TableName: "users"}}
 }
 
 // GetUserModelAndID 設置UserModel與ID
@@ -79,12 +79,10 @@ func (user UserModel) Update(username, phone, email, password string) (int64, er
 		"username":   username,
 		"phone":      phone,
 		"email":      email,
+		"password":   password,
 		"updated_at": time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	if password != "" {
-		fieldValues["password"] = password
-	}
 	return user.SetTx(user.Tx).Table(user.Base.TableName).
 		Where("id", "=", user.ID).Update(fieldValues)
 }

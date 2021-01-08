@@ -75,7 +75,7 @@ func DefaultInvoker(conn db.Connection) *Invoker {
 						confirmButtonColor: "#3c8dbc",
 						confirmButtonText: '` + "got it" + `',
 					})
-					setTimeout(function(){ location.href = "` + u + `"; }, 5000);
+					setTimeout(function(){ location.href = "` + u + `"; }, 2000);
 				} else {
 					alert("` + msg + `")
 					location.href = "` + u + `"
@@ -182,7 +182,7 @@ func Filter(ctx *gin.Context, conn db.Connection) (models.UserModel, bool, bool)
 // GetUserByID 透過id取得用戶角色權限菜單，以及是否有可以訪問的menu
 func GetUserByID(id int64, conn db.Connection) (user models.UserModel, ok bool) {
 	var superAdmin bool
-	user = models.DefaultUserModel("users").SetConn(conn).FindByID(id)
+	user = models.DefaultUserModel().SetConn(conn).FindByID(id)
 	if user.ID == int64(0) {
 		ok = false
 		return

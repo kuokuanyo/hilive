@@ -684,7 +684,7 @@ const InfoTmpl = `
 										{{if eq .PanelInfo.Paginator.PreviousClass "disabled"}}
 											<span class="page-link">«</span>
 										{{else}}
-											<a class="page-link" href='{{.PanelInfo.Paginator.PreviousUrl}}' rel="next">«</a>
+											<a class="page-link" href='{{.PanelInfo.Paginator.PreviousURL}}' rel="next">«</a>
 										{{end}}
 									</li>
 									{{range $key, $page := .PanelInfo.Paginator.Pages}}
@@ -703,7 +703,7 @@ const InfoTmpl = `
 										{{if eq .PanelInfo.Paginator.NextClass "disabled"}}
 											<span class="page-link">»</span>
 										{{else}}
-											<a class="page-link" href='{{.PanelInfo.Paginator.NextUrl}}' rel="next">»</a>
+											<a class="page-link" href='{{.PanelInfo.Paginator.NextURL}}' rel="next">»</a>
 										{{end}}
 									</li>
 								</ul>

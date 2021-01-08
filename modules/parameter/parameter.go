@@ -26,8 +26,8 @@ func DefaultParameters() Parameters {
 	}
 }
 
-// SetFieldPKByJoinParam 將參數(多個)join成string加入Parameters.Fields["__pk"]
-func (param Parameters) SetFieldPKByJoinParam(id ...string) Parameters {
+// SetPKs 將參數(多個)join成string加入Parameters.Fields["__pk"]
+func (param Parameters) SetPKs(id ...string) Parameters {
 	param.Fields["__pk"] = []string{strings.Join(id, ",")}
 	return param
 }
@@ -56,6 +56,16 @@ func (param Parameters) FindPKs() []string {
 	return []string{}
 }
 
+// GetParamFromURL 解析URL後設置頁面資訊
+func GetParamFromURL(urlStr string, defaultPageSize int) Parameters {
+	// 解析url
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return DefaultParameters()
+	}
+	return GetParam(u, defaultPageSize)
+}
+
 // GetParam 設置頁面資訊
 func GetParam(u *url.URL, defaultPageSize int) Parameters {
 	// Query從url取得設定參數
@@ -66,7 +76,7 @@ func GetParam(u *url.URL, defaultPageSize int) Parameters {
 	SortType := "asc"
 
 	page := getDefault(values, "__page", "1")
-	pageSize := getDefault(values, "__pageSize", "10")
+	pageSize := getDefault(values, "__pageSize", strconv.Itoa(defaultPageSize))
 	sortField := getDefault(values, "__sort", primaryKey)
 	sortType := getDefault(values, "__sort_type", SortType)
 
@@ -78,13 +88,13 @@ func GetParam(u *url.URL, defaultPageSize int) Parameters {
 	}
 
 	return Parameters{
-		Page:     page,
-		PageSize: pageSize,
-		URLPath:  u.Path,
+		Page:      page,
+		PageSize:  pageSize,
+		URLPath:   u.Path,
 		SortField: sortField,
-		SortType: sortType,
-		Fields: make(map[string][]string),
-		Columns: columnsArr,
+		SortType:  sortType,
+		Fields:    make(map[string][]string),
+		Columns:   columnsArr,
 	}
 }
 
@@ -107,6 +117,7 @@ func (param Parameters) GetFieldValue(field string) string {
 }
 
 // GetRouteParamStr 將url.value{}處理成url後的參數
+// ex: ?__page=1&__pageSize=10&__sort=id&__sort_type=desc
 func (param Parameters) GetRouteParamStr() string {
 	p := param.GetFixedParam()
 	p.Add("__page", param.Page)
@@ -175,4 +186,16 @@ func (param Parameters) GetRouteParamWithoutPageSize(page string) string {
 		p[key] = value
 	}
 	return "?" + p.Encode()
+}
+
+// DeleteField 刪除Parameters.Fields[參數]
+func (param Parameters) DeleteField(field string) Parameters {
+	delete(param.Fields, field)
+	return param
+}
+
+// DeletePK 刪除Parameters.Fields[__pk]
+func (param Parameters) DeletePK() Parameters {
+	delete(param.Fields, "__pk")
+	return param
 }

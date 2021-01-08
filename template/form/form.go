@@ -1,6 +1,8 @@
 package form
 
-import "html/template"
+import (
+	"html/template"
+)
 
 // Type uint8
 type Type uint8
