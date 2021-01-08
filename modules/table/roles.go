@@ -101,7 +101,7 @@ func GetRolesPanel(conn db.Connection) (rolesTable Table) {
 			role, err := models.DefaultRoleModel().SetTx(tx).SetConn(conn).AddRole(values.Get("name"), values.Get("slug"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
-					return errors.New("新增角色發生錯誤"), nil
+					return errors.New("新增角色發生錯誤，可能原因:角色名稱已被註冊"), nil
 				}
 			}
 			// 	新增權限
@@ -131,7 +131,7 @@ func GetRolesPanel(conn db.Connection) (rolesTable Table) {
 			_, err := role.SetTx(tx).Update(values.Get("name"), values.Get("slug"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
-					return errors.New("更新角色資料發生錯誤"), nil
+					return errors.New("更新角色發生錯誤，可能原因:角色名稱已被註冊"), nil
 				}
 			}
 			// 刪除該角色權限

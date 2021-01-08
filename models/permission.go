@@ -29,7 +29,7 @@ func DefaultPermissionModel() PermissionModel {
 // GetPermissionModelAndID 設置PermissionModel與ID
 func GetPermissionModelAndID(id string) PermissionModel {
 	idInt, _ := strconv.Atoi(id)
-	return PermissionModel{Base: Base{TableName: "permission"}, ID: int64(idInt)}
+	return PermissionModel{Base: Base{TableName: "permissions"}, ID: int64(idInt)}
 }
 
 // SetConn 設置connection

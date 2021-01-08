@@ -157,10 +157,10 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 
 		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料
-			_, err := user.SetTx(tx).Update(values.Get("username"), values.Get("phone"), values.Get("email"), password)
+			_, err := user.SetTx(tx).Update(values.Get("userid"), values.Get("username"), values.Get("picture"), values.Get("phone"), values.Get("email"), password)
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
-					return errors.New("更新用戶資料發生錯誤"), nil
+					return errors.New("更新用戶發生錯誤，可能原因:用戶ID、手機號碼、電子信箱已被註冊"), nil
 				}
 			}
 			// 刪除該ID用戶所有角色並新增新的角色

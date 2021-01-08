@@ -37,7 +37,7 @@ func DefaultUserModel() UserModel {
 }
 
 // GetUserModelAndID 設置UserModel與ID
-func GetUserModelAndID(id, tablename string) UserModel {
+func GetUserModelAndID(tablename, id string) UserModel {
 	idInt, _ := strconv.Atoi(id)
 	return UserModel{Base: Base{TableName: tablename}, ID: int64(idInt)}
 }
@@ -74,9 +74,11 @@ func (user UserModel) FindByEmail(email interface{}) UserModel {
 }
 
 // Update 更新用戶資料
-func (user UserModel) Update(username, phone, email, password string) (int64, error) {
+func (user UserModel) Update(userid, username, picture, phone, email, password string) (int64, error) {
 	fieldValues := sql.Value{
+		"userid":     userid,
 		"username":   username,
+		"picture":    picture,
 		"phone":      phone,
 		"email":      email,
 		"password":   password,

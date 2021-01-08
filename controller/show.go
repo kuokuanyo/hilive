@@ -22,7 +22,7 @@ import (
 func (h *Handler) ShowEditForm(ctx *gin.Context) {
 	param := guard.GetShowEditForm(ctx)
 
-	h.showEditForm(ctx, "", param.Panel, param.Param, param.Prefix)
+	h.showEditForm(ctx, h.Alert, param.Panel, param.Param, param.Prefix)
 }
 
 // ShowInfo 前端資訊頁面

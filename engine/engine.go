@@ -134,6 +134,8 @@ func (eng *Engine) InitRouter() *Engine {
 	authPrefixRoute.GET("/info/:__prefix/new", eng.guard.ShowNewForm, eng.handler.ShowNewForm)
 	authPrefixRoute.GET("/info/:__prefix/edit", eng.guard.ShowEditForm, eng.handler.ShowEditForm)
 	authPrefixRoute.POST("/new/:__prefix", eng.guard.NewForm, eng.handler.NewForm)
+	authPrefixRoute.POST("/edit/:__prefix", eng.guard.EditForm, eng.handler.EditForm)
+	authPrefixRoute.POST("/delete/:__prefix", eng.guard.Delete, eng.handler.Delete)
 
 	return eng
 }

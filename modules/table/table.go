@@ -12,6 +12,7 @@ import (
 	"hilive/template/types"
 	"html/template"
 	"strconv"
+	"strings"
 )
 
 // BaseTable 包含面板、表單資訊...等
@@ -71,6 +72,12 @@ type Table interface {
 
 	// InsertData 插入資料
 	InsertData(dataList form.Values) error
+
+	// UpdateData 更新資料
+	UpdateData(dataList form.Values) error
+
+	// DeleteData 刪除資料
+	DeleteData(pk string) error
 }
 
 // DefaultBaseTable 建立預設的BaseTable(同時也是Table(interface))
@@ -173,6 +180,28 @@ func (base *BaseTable) InsertData(dataList form.Values) error {
 	return nil
 }
 
+// UpdateData 更新資料
+func (base *BaseTable) UpdateData(dataList form.Values) error {
+	if base.Form.UpdateFunc != nil {
+		err := base.Form.UpdateFunc(dataList)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DeleteData 刪除資料
+func (base *BaseTable) DeleteData(id string) error {
+	idArr := strings.Split(id, ",")
+
+	if base.Informatoin.DeleteFunc != nil {
+		err := base.Informatoin.DeleteFunc(idArr)
+		return err
+	}
+	return nil
+}
+
 // -----BaseTable的所有Table方法-----end
 
 // GetSQLByService 設置db.SQL(struct)的Connection、CRUD
@@ -226,10 +255,10 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 
 	if len(ids) > 0 {
 		queryStatement = "select %s from %s%s where " + primaryKey + " in (%s) %s ORDER BY %s.%s %s"
-		countStatement = "select count(*) from %s %s where " + primaryKey + " in (%s)"
+		countStatement = "select count(*) from %s where " + primaryKey + " in (%s)"
 	} else {
 		queryStatement = "select %s from %s%s %s %s order by %s.%s %s LIMIT ? OFFSET ?"
-		countStatement = "select count(*) from %s %s %s"
+		countStatement = "select count(*) from %s %s"
 	}
 
 	// 取得所有欄位
@@ -257,18 +286,18 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 		}
 		wheres = wheres[:len(wheres)-1]
 	} else {
+		// WhereStatement 處理過濾的where語法
+		wheres, whereArgs, existKeys = params.WhereStatement(wheres, base.Informatoin.Table, whereArgs, columns, existKeys)
+
 		wheres, whereArgs = base.Informatoin.Wheres.WhereStatement(wheres, whereArgs, existKeys, columns)
 		if wheres != "" {
 			wheres = " where " + wheres
 		}
-		fmt.Println(wheres)
-		fmt.Println(whereArgs)
-		fmt.Println(existKeys)
 
 		if connection.Name() == "mysql" {
 			pageSizeInt, _ := strconv.Atoi(params.PageSize)
 			pageInt, _ := strconv.Atoi(params.Page)
-			args = append(args, pageSizeInt, (pageInt-1)*(pageSizeInt))
+			args = append(whereArgs, pageSizeInt, (pageInt-1)*(pageSizeInt))
 		}
 	}
 
@@ -282,7 +311,6 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 	// sql 語法
 	queryCmd := fmt.Sprintf(queryStatement, allFields, base.Informatoin.Table, joins, wheres, groupBy,
 		base.Informatoin.Table, params.SortField, params.SortType)
-	fmt.Println(queryCmd)
 
 	res, err := connection.Query(queryCmd, args...)
 	if err != nil {
@@ -297,8 +325,7 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 
 	// 計算資料數
 	if len(ids) == 0 {
-		countCmd := fmt.Sprintf(countStatement, base.Informatoin.Table, joins, wheres)
-
+		countCmd := fmt.Sprintf(countStatement, base.Informatoin.Table, wheres)
 		total, err := connection.Query(countCmd, whereArgs...)
 		if err != nil {
 			return PanelInfo{}, err

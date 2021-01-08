@@ -14,7 +14,7 @@ func (h *Handler) NewForm(ctx *gin.Context) {
 	if err != nil {
 		h.Alert = err.Error()
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-PJAX-Url", param.Path+"/new/"+param.Param.GetRouteParamStr())
+		ctx.Header("X-PJAX-Url", param.Path+"/new")
 		return
 	}
 

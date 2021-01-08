@@ -119,7 +119,7 @@ func GetPermissionPanel(conn db.Connection) (permissionTable Table) {
 				values.Get("name"), values.Get("slug"), method, path)
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
-					return errors.New("新增權限發生錯誤"), nil
+					return errors.New("新增權限發生錯誤，可能原因:權限名稱已被註冊"), nil
 				}
 			}
 			return nil, nil
@@ -143,7 +143,7 @@ func GetPermissionPanel(conn db.Connection) (permissionTable Table) {
 			_, err := permission.SetTx(tx).Update(values.Get("name"), values.Get("slug"), method, path)
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
-					return errors.New("更新權限資料發生錯誤"), nil
+					return errors.New("更新權限發生錯誤，可能原因:權限名稱已被註冊"), nil
 				}
 			}
 			return nil, nil

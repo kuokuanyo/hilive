@@ -1,10 +1,26 @@
 package parameter
 
 import (
+	"hilive/modules/utils"
 	"net/url"
 	"strconv"
 	"strings"
 )
+
+// keys url參數
+var keys = []string{"__page", "__pageSize", "__sort", "__columns", "__prefix"}
+
+// operators 運算符號
+var operators = map[string]string{
+	"like": "like",
+	"gr":   ">",
+	"gq":   ">=",
+	"eq":   "=",
+	"ne":   "!=",
+	"le":   "<",
+	"lq":   "<=",
+	"free": "free",
+}
 
 // Parameters 紀錄頁面資訊，頁數及頁數size...等
 type Parameters struct {
@@ -87,15 +103,98 @@ func GetParam(u *url.URL, defaultPageSize int) Parameters {
 		columnsArr = strings.Split(columns, ",")
 	}
 
+	// 將除了keys以外(其他過濾條件)的參數加入fields中
+	fields := make(map[string][]string)
+	for key, value := range values {
+		if !utils.InArray(keys, key) && len(value) > 0 && value[0] != "" {
+			if key == "__sort_type" {
+				if value[0] != "desc" && value[0] != "asc" {
+					fields[key] = []string{"asc"}
+				}
+			} else {
+				if strings.Contains(key, "__operator__") &&
+					values.Get(strings.Replace(key, "__operator__", "", -1)) == "" {
+					continue
+				}
+				fields[strings.Replace(key, "[]", "", -1)] = value
+			}
+		}
+	}
+
 	return Parameters{
 		Page:      page,
 		PageSize:  pageSize,
 		URLPath:   u.Path,
 		SortField: sortField,
 		SortType:  sortType,
-		Fields:    make(map[string][]string),
+		Fields:    fields,
 		Columns:   columnsArr,
 	}
+}
+
+// WhereStatement 處理過濾的where語法
+func (param Parameters) WhereStatement(wheres, table string, whereArgs []interface{}, columns, existKeys []string) (string, []interface{}, []string) {
+	for key, value := range param.Fields {
+		// 運算符號
+		var op string
+		if strings.Contains(key, "_end") {
+			key = strings.Replace(key, "_end", "", -1)
+			op = "<="
+		} else if strings.Contains(key, "_start") {
+			key = strings.Replace(key, "_start", "", -1)
+			op = ">="
+		} else if len(value) > 1 {
+			op = "in"
+		} else if !strings.Contains(key, "__operator__") {
+			op = "="
+		}
+
+		if utils.InArray(columns, key) {
+			// 判斷運算符號
+			if op == "in" {
+				qmark := ""
+				for range value {
+					qmark += "?,"
+				}
+				wheres += table + "." + key + " " + op + " (" + qmark[:len(qmark)-1] + ") and "
+			} else {
+				wheres += table + "." + key + " " + op + " ? and "
+			}
+
+			if op == "like" && !strings.Contains(value[0], "%") {
+				whereArgs = append(whereArgs, "%"+value[0]+"%")
+			} else {
+				for _, v := range value {
+					whereArgs = append(whereArgs, v)
+				}
+			}
+		} else {
+			keys := strings.Split(key, "_join_") // 刪選角色欄位會用到
+			if len(keys) > 1 {
+				if op == "in" {
+					qmark := ""
+					for range value {
+						qmark += "?,"
+					}
+					wheres += keys[0] + "." + keys[1] + " " + op + " (" + qmark[:len(qmark)-1] + ") and "
+				} else {
+					wheres += keys[0] + "." + keys[1] + " " + op + " ? and "
+				}
+				if op == "like" && !strings.Contains(value[0], "%") {
+					whereArgs = append(whereArgs, "%"+value[0]+"%")
+				} else {
+					for _, v := range value {
+						whereArgs = append(whereArgs, v)
+					}
+				}
+			}
+		}
+		existKeys = append(existKeys, key)
+	}
+	if len(wheres) > 3 {
+		wheres = wheres[:len(wheres)-4]
+	}
+	return wheres, whereArgs, existKeys
 }
 
 // getDefault 判斷url是否有設置key參數，如果沒有則回傳def(預設值)
