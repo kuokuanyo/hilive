@@ -26,7 +26,7 @@ func (g *Guard) Delete(ctx *gin.Context) {
 	// GetTable 取得table(面板資訊、表單資訊)
 	panel, prefix := g.GetTable(ctx)
 
-	id := ctx.Query("id")
+	id := ctx.Request.FormValue("id")
 	if id == "" {
 		user := auth.GetUserByMiddleware()
 		// GetMenuInformation 透過user取得menu資料表資訊

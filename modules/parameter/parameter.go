@@ -8,7 +8,7 @@ import (
 )
 
 // keys url參數
-var keys = []string{"__page", "__pageSize", "__sort", "__columns", "__prefix"}
+var keys = []string{"__page", "__pageSize", "__sort", "__columns", "__prefix", "_pjax"}
 
 // operators 運算符號
 var operators = map[string]string{

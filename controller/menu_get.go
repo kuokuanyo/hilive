@@ -10,6 +10,7 @@ import (
 	"hilive/modules/utils"
 	"hilive/template/types"
 	"hilive/views/alert"
+	"hilive/views/form"
 	"hilive/views/menuviews"
 	"html/template"
 	"net/http"
@@ -93,7 +94,7 @@ func (h *Handler) showNewMenu(ctx *gin.Context, url string, alert string) {
 		IndexURL:    config.Prefix() + h.Config.IndexURL,
 	}
 
-	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(menuviews.FormTmpl)
+	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(form.FormTmpl)
 	if err != nil {
 		panic("使用新建菜單模板發生錯誤")
 	}
@@ -192,7 +193,7 @@ func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, url st
 		PreviousURL: config.Prefix() + h.Config.MenuURL,
 	}
 
-	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(menuviews.FormTmpl)
+	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(form.FormTmpl)
 	if err != nil {
 		panic("使用編輯菜單模板發生錯誤")
 	}
@@ -201,7 +202,7 @@ func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, url st
 		User         models.UserModel
 		Menu         *menu.Menu
 		AlertContent string
-		Content      types.FormFields
+		FormInfo     table.FormInfo
 		Config       *config.Config
 		URLRoute     URLRoute
 		Token        string
@@ -210,7 +211,7 @@ func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, url st
 		User:         user,
 		Menu:         menuInfo,
 		AlertContent: alert,
-		Content:      formInfo.FieldList,
+		FormInfo:     formInfo,
 		Config:       h.Config,
 		URLRoute:     route,
 		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),

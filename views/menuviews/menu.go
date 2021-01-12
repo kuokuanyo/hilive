@@ -413,43 +413,81 @@ const MenuTmpl = `
 																			{{end}}
 																		{{else if eq $data.FormType.String "select"}}
 																			<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}[]"
-																				multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
-																				{{if not .Editable}}disabled="disabled"{{end}}>
-																			{{range $key, $v := .FieldOptions }}
-																				<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
-																			{{end}}
-    																		</select>
-																			<script>
-																				$("select.{{.Field}}").select2({{.OptionExt}});
-																			</script>
-																		{{else if eq $data.FormType.String "select_single"}}
-																			<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}"
-																			data-multiple="false" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+																			multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
 																			{{if not .Editable}}disabled="disabled"{{end}}>
-																				<option></option>
 																				{{range $key, $v := .FieldOptions }}
 																					<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
 																				{{end}}
+																			</select>
+																				<script>
+																					$("select.{{.Field}}").select2({{.OptionExt}});
+																				</script>
+																		{{else if eq $data.FormType.String "select_single"}}
+																			<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}"
+																			data-multiple="false" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+																				{{if not .Editable}}disabled="disabled"{{end}}>
+																					<option></option>
+																					{{range $key, $v := .FieldOptions }}
+																						<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																					{{end}}
 																			</select>
 																			<script>
 																				$("select.{{.Field}}").select2({{.OptionExt}});
 																			</script>
 																		{{else if eq $data.FormType.String "iconpicker"}}
 																			<div class="input-group">
-																			<span class="input-group-addon"><i class="fa"></i></span>
-																			{{if eq $data.Value ""}}
-																				<input style="width: 140px" type="text" name="{{$data.Field}}" value="fa-bars"
-																					class="form-control {{.Field}}"
-																					placeholder="{{"Input Icon"}}">
-																			{{else}}
-																				<input style="width: 140px" type="text" name="{{$data.Field}}" value="{{$data.Value}}"
-																					class="form-control {{.Field}}"
-																					placeholder="{{"Input Icon"}}">
-																			{{end}}
+																				<span class="input-group-addon"><i class="fa"></i></span>
+																					{{if eq $data.Value ""}}
+																						<input style="width: 140px" type="text" name="{{$data.Field}}" value="fa-bars"
+																							class="form-control {{.Field}}"
+																							placeholder="{{"Input Icon"}}">
+																					{{else}}
+																						<input style="width: 140px" type="text" name="{{$data.Field}}" value="{{$data.Value}}"
+																							class="form-control {{.Field}}"
+																							placeholder="{{"Input Icon"}}">
+																					{{end}}
 																			</div>
 																			<script>
 																				$('.{{.Field}}').iconpicker({placement: 'bottomLeft'});
 																			</script>
+																		{{else if eq $data.FormType.String "password"}}
+																			{{if .Editable}}
+																				<div class="input-group">
+																					<span class="input-group-addon"><i class="fa fa-eye-slash"></i></span>
+																					<input {{if .Must}}required="1"{{end}} type="password" name="{{$data.Field}}"
+																						value="{{$data.Value}}"
+																						class="form-control {{.Field}}" placeholder="{{.Placeholder}}">
+																				</div>
+																			{{else}}
+																				<div class="box box-solid box-default no-margin">
+																					<div class="box-body">********</div>
+																				</div>
+																			{{end}}
+																		{{else if eq .FormType.String "selectbox"}}
+																			<select class="form-control {{.Field}}" style="width: 100%;" name="{{.Field}}[]" multiple="multiple"
+																			data-placeholder="Input {{.Header}}" {{if not .Editable}}disabled="disabled"{{end}}>
+																			{{range  $key, $v := .FieldOptions }}
+																				<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+																			{{end}}
+																			</select>
+																			<script>
+																				$("select.{{.Field}}").bootstrapDualListbox({
+																					"infoText": "Showing all {0}",
+																					"infoTextEmpty": "Empty list",
+																					"infoTextFiltered": "{0} \/ {1}",
+																					"filterTextClear": "Show all",
+																					"filterPlaceHolder": "Filter"
+																				});
+																			</script>
+																		{{else if eq .FormType.String "textarea"}}
+																			<textarea {{if .Must}}required="1"{{end}} name="{{.Field}}" class="form-control" rows="5"
+																			placeholder="{{.Placeholder}}"
+																			{{if not .Editable}}disabled="disabled"{{end}}>{{.Value}}</textarea>
+																		{{end}}
+																		{{if ne .HelpMsg ""}}
+																		<span class="help-block">
+																			<i class="fa fa-info-circle"></i>&nbsp;{{.HelpMsg}}
+																		</span>
 																		{{end}}
 																	</div>
 																</div>	           

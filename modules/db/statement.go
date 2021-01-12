@@ -290,6 +290,7 @@ func RecycleSQL(s *SQL) {
 	s.clean()
 	s.conn = nil
 	s.crud = nil
+	s.tx = nil
 	// 將清空的SQL設置於SQLPool
 	SQLPool.Put(s)
 }

@@ -17,8 +17,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// SystemTable 紀錄表單及頁面資訊
+type SystemTable struct {
+	conn   db.Connection
+	config *config.Config
+}
+
+// NewSystemTable 將參數設置至SystemTable(struct)
+func NewSystemTable(conn db.Connection, c *config.Config) *SystemTable {
+	return &SystemTable{conn: conn, config: c}
+}
+
+// connection 設置SQL(struct)
+func (s *SystemTable) connection() *db.SQL {
+	return db.SetConnectionAndCRUD(s.conn)
+}
+
+// table 設置SQL(struct)並且清除過濾條件的設置
+func (s *SystemTable) table(table string) *db.SQL {
+	return db.TableAndCleanData(table, s.conn)
+}
+
 // GetManagerPanel 取得用戶頁面、表單資訊
-func GetManagerPanel(conn db.Connection) (managerTable Table) {
+func (s *SystemTable) GetManagerPanel(conn db.Connection) (managerTable Table) {
 	// 建立BaseTable
 	managerTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 
@@ -62,22 +83,22 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 		SetDeleteFunc(func(idArr []string) error {
 			var ids = interfaces(idArr)
 
-			_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-				err := db.SetConnectionAndCRUD(conn).SetTx(tx).
+			_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+				err := s.connection().SetTx(tx).
 					Table("role_users").WhereIn("user_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除role_users資料表角色發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("user_permissions").WhereIn("user_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除user_permissions資料表權限發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("users").WhereIn("id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
@@ -88,7 +109,7 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 			})
 			return txErr
 		})
-	
+
 	// 取得FormPanel
 	formList := managerTable.GetFormPanel()
 
@@ -108,7 +129,7 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 				return roles
 			}
 
-			roleModel, _ := db.TableAndCleanData("role_users", conn).Select("role_id").
+			roleModel, _ := s.table("role_users").Select("role_id").
 				Where("user_id", "=", model.ID).All()
 			for _, v := range roleModel {
 				roles = append(roles, strconv.FormatInt(v["role_id"].(int64), 10))
@@ -123,7 +144,7 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 				return permissions
 			}
 
-			permissionModel, _ := db.TableAndCleanData("user_permissions", conn).
+			permissionModel, _ := s.table("user_permissions").
 				Select("permission_id").Where("user_id", "=", model.ID).All()
 			for _, v := range permissionModel {
 				permissions = append(permissions, strconv.FormatInt(v["permission_id"].(int64), 10))
@@ -155,7 +176,7 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 
 		user := models.GetUserModelAndID("users", values.Get("id")).SetConn(conn)
 
-		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料
 			_, err := user.SetTx(tx).Update(values.Get("userid"), values.Get("username"), values.Get("picture"), values.Get("phone"), values.Get("email"), password)
 			if err != nil {
@@ -210,7 +231,7 @@ func GetManagerPanel(conn db.Connection) (managerTable Table) {
 		}
 		password = EncodePassword([]byte(values.Get("password")))
 
-		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增用戶資料
 			user, err := models.DefaultUserModel().SetTx(tx).SetConn(conn).AddUser(values.Get("userid"), values.Get("username"),
 				values.Get("phone"), values.Get("email"), password)

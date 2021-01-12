@@ -4,6 +4,8 @@ import (
 	"hilive/engine"
 	"hilive/modules/config"
 
+	_ "hilive/adapter/gin" // 框架引擎
+
 	_ "github.com/go-sql-driver/mysql" // mysql引擎
 )
 

@@ -16,7 +16,7 @@ import (
 )
 
 // GetPermissionPanel 取得權限資訊面板、表單資訊
-func GetPermissionPanel(conn db.Connection) (permissionTable Table) {
+func (s *SystemTable)GetPermissionPanel(conn db.Connection) (permissionTable Table) {
 	// DefaultBaseTable 建立預設的BaseTable(同時也是Table(interface))
 	permissionTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 
@@ -52,22 +52,22 @@ func GetPermissionPanel(conn db.Connection) (permissionTable Table) {
 	info.SetTable("permissions").SetTitle("權限").SetDescription("權限管理").
 		SetDeleteFunc(func(idArr []string) error {
 			var ids = interfaces(idArr)
-			_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *dbsql.Tx) (e error, i map[string]interface{}) {
-				err := db.SetConnectionAndCRUD(conn).SetTx(tx).
+			_, txErr := s.connection().WithTransaction(func(tx *dbsql.Tx) (e error, i map[string]interface{}) {
+				err := s.connection().SetTx(tx).
 					Table("role_permissions").WhereIn("permission_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除role_permissions資料表角色發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("user_permissions").WhereIn("permission_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除user_permissions資料表角色發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("permissions").WhereIn("id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
@@ -113,7 +113,7 @@ func GetPermissionPanel(conn db.Connection) (permissionTable Table) {
 
 		method := strings.Join(values["http_method[]"], ",")
 		path := strings.TrimSpace(values.Get("http_path"))
-		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增權限資料
 			_, err := models.DefaultPermissionModel().SetTx(tx).SetConn(conn).AddPermission(
 				values.Get("name"), values.Get("slug"), method, path)
@@ -138,7 +138,7 @@ func GetPermissionPanel(conn db.Connection) (permissionTable Table) {
 
 		method := strings.Join(values["http_method[]"], ",")
 		path := strings.TrimSpace(values.Get("http_path"))
-		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新角色
 			_, err := permission.SetTx(tx).Update(values.Get("name"), values.Get("slug"), method, path)
 			if err != nil {

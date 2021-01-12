@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"hilive/adapter"
 	"hilive/controller"
 	"hilive/guard"
 	"hilive/models"
@@ -15,19 +16,16 @@ import (
 
 var (
 	// Router gin引擎
-	r *gin.Engine
+	r              *gin.Engine
+	defaultAdapter adapter.WebFrameWork
 )
 
-func init() {
-	// Default returns an Engine instance with the Logger and Recovery middleware already attached.
-	r = gin.Default()
-}
 
 // Engine 核心組件，有PluginList及Adapter兩個屬性
 type Engine struct {
+	Adapter  adapter.WebFrameWork
 	config   *config.Config
 	Services service.List // 儲存資料庫引擎、Config(struct)
-	Gin      *gin.Engine
 	handler  controller.Handler
 	guard    guard.Guard
 }
@@ -36,8 +34,15 @@ type Engine struct {
 func DefaultEngine() *Engine {
 	return &Engine{
 		Services: service.GetServices(),
-		Gin:      r,
 	}
+}
+
+// Register 建立引擎預設的配適器
+func Register(ada adapter.WebFrameWork) {
+	if ada == nil {
+		panic("adapter is nil")
+	}
+	defaultAdapter = ada
 }
 
 // InitDatabase 初始化資料庫引擎後將driver加入Engine.Services
@@ -55,25 +60,26 @@ func (eng *Engine) InitDatabase(cfg config.Config) *Engine {
 		Tokens: make(auth.CSRFToken, 0),
 	})
 
+	st := table.NewSystemTable(eng.GetConnectionByDriver(), eng.config)
 	// 設置頁面資訊及表單資訊map
 	tablelist := map[string]func(conn db.Connection) table.Table{
-		"manager":    table.GetManagerPanel,
-		"roles":      table.GetRolesPanel,
-		"permission": table.GetPermissionPanel,
+		"manager":    st.GetManagerPanel,
+		"roles":      st.GetRolesPanel,
+		"permission": st.GetPermissionPanel,
 	}
 
 	eng.handler = controller.Handler{
-		Config:        eng.config,
-		Conn:          eng.GetConnectionByDriver(),
-		Gin:           r,
-		Services:      eng.Services,
+		Config:     eng.config,
+		Conn:       eng.GetConnectionByDriver(),
+		Gin:        r,
+		Services:   eng.Services,
 		TablelList: tablelist,
 	}
 
 	eng.guard = guard.Guard{
-		Conn:          eng.GetConnectionByDriver(),
-		Services:      eng.Services,
-		Config:        eng.config,
+		Conn:       eng.GetConnectionByDriver(),
+		Services:   eng.Services,
+		Config:     eng.config,
 		TablelList: tablelist,
 	}
 
@@ -110,8 +116,12 @@ func (eng *Engine) GetConnectionByDriver() db.Connection {
 
 // InitRouter 設置路由
 func (eng *Engine) InitRouter() *Engine {
-	router := eng.Gin.Group("/admin")
+	// Default returns an Engine instance with the Logger and Recovery middleware already attached.
+	r = gin.Default()
+	router := r.Group("/admin")
 	router.Static("/assets", "./assets")
+
+
 	// 登入GET、POST
 	router.GET(eng.config.LoginURL, eng.handler.ShowLogin)
 	router.POST(eng.config.LoginURL, eng.handler.Auth)
@@ -128,7 +138,7 @@ func (eng *Engine) InitRouter() *Engine {
 	authRoute.POST(eng.config.MenuEditURL, eng.guard.MenuEdit, eng.handler.EditMenu)
 	authRoute.POST(eng.config.MenuDeleteURL, eng.guard.MenuDelete, eng.handler.DeleteMenu)
 
-	authPrefixRoute := router.Use(auth.DefaultInvoker(eng.handler.Conn).Middleware(eng.handler.Conn), eng.guard.CheckPrefix)
+	authPrefixRoute := router.Use(eng.guard.CheckPrefix)
 	// 使用者、角色、權限
 	authPrefixRoute.GET("/info/:__prefix", eng.handler.ShowInfo)
 	authPrefixRoute.GET("/info/:__prefix/new", eng.guard.ShowNewForm, eng.handler.ShowNewForm)

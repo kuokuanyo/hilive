@@ -1,6 +1,6 @@
 package form
 
-// NewFormTmpl 新增表單模板
+// FormTmpl 表單模板
 const FormTmpl = `
 <html>
 	<head>
@@ -193,7 +193,7 @@ const FormTmpl = `
 						{{end}}
 						<div class="box box-"}>
 							<div class="box-header with-border"> 
-								<h3 class="box-title">新增</h3>
+								<h3 class="box-title">請完整填寫表格</h3>
 								<div class="box-tools">
 									<div class="btn-group pull-right" style="margin-right: 10px">
 										<a href={{.URLRoute.PreviousURL}} class="btn btn-sm btn-default form-history-back"><i class="fa fa-arrow-left"></i>&nbsp;返回</a>

@@ -14,7 +14,7 @@ import (
 )
 
 // GetRolesPanel 取得角色面板資訊、表單資訊
-func GetRolesPanel(conn db.Connection) (rolesTable Table) {
+func (s *SystemTable) GetRolesPanel(conn db.Connection) (rolesTable Table) {
 	// DefaultBaseTable 建立預設的BaseTable(同時也是Table(interface))
 	rolesTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 
@@ -30,29 +30,29 @@ func GetRolesPanel(conn db.Connection) (rolesTable Table) {
 	info.SetTable("roles").SetTitle("角色").SetDescription("角色管理").
 		SetDeleteFunc(func(idArr []string) error {
 			var ids = interfaces(idArr)
-			_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-				err := db.SetConnectionAndCRUD(conn).SetTx(tx).
+			_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+				err := s.connection().SetTx(tx).
 					Table("role_users").WhereIn("role_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除role_users資料表角色發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("role_menu").WhereIn("role_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除role_menu資料表角色發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("role_permissions").WhereIn("role_id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
 						return errors.New("刪除role_permissions資料表角色發生錯誤"), nil
 					}
 				}
-				err = db.SetConnectionAndCRUD(conn).SetTx(tx).
+				err = s.connection().SetTx(tx).
 					Table("roles").WhereIn("id", ids).Delete()
 				if err != nil {
 					if err.Error() != "沒有影響任何資料" {
@@ -79,7 +79,7 @@ func GetRolesPanel(conn db.Connection) (rolesTable Table) {
 				return permissions
 			}
 
-			permissionModel, _ := db.TableAndCleanData("role_permissions", conn).
+			permissionModel, _ := s.table("role_permissions").
 				Select("permission_id").Where("role_id", "=", model.ID).All()
 			for _, v := range permissionModel {
 				permissions = append(permissions, strconv.FormatInt(v["permission_id"].(int64), 10))
@@ -96,7 +96,7 @@ func GetRolesPanel(conn db.Connection) (rolesTable Table) {
 			return errors.New("角色標誌已經存在")
 		}
 
-		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增角色
 			role, err := models.DefaultRoleModel().SetTx(tx).SetConn(conn).AddRole(values.Get("name"), values.Get("slug"))
 			if err != nil {
@@ -126,7 +126,7 @@ func GetRolesPanel(conn db.Connection) (rolesTable Table) {
 		// 設置RoleModel與ID
 		role := models.GetRoleModelAndID(values.Get("id")).SetConn(conn)
 
-		_, txErr := db.SetConnectionAndCRUD(conn).WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
+		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新角色
 			_, err := role.SetTx(tx).Update(values.Get("name"), values.Get("slug"))
 			if err != nil {
