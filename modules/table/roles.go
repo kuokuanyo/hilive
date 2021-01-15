@@ -1,6 +1,7 @@
 package table
 
 import (
+	"hilive/context"
 	"database/sql"
 	"errors"
 	"hilive/models"
@@ -14,7 +15,7 @@ import (
 )
 
 // GetRolesPanel 取得角色面板資訊、表單資訊
-func (s *SystemTable) GetRolesPanel(conn db.Connection) (rolesTable Table) {
+func (s *SystemTable) GetRolesPanel(ctx *context.Context) (rolesTable Table) {
 	// DefaultBaseTable 建立預設的BaseTable(同時也是Table(interface))
 	rolesTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 
@@ -92,13 +93,13 @@ func (s *SystemTable) GetRolesPanel(conn db.Connection) (rolesTable Table) {
 
 	// 設置角色新增函式
 	formList.SetInsertFunc(func(values form2.Values) error {
-		if models.DefaultRoleModel().SetConn(conn).IsSlugExist(values.Get("slug"), "") {
+		if models.DefaultRoleModel().SetConn(s.conn).IsSlugExist(values.Get("slug"), "") {
 			return errors.New("角色標誌已經存在")
 		}
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增角色
-			role, err := models.DefaultRoleModel().SetTx(tx).SetConn(conn).AddRole(values.Get("name"), values.Get("slug"))
+			role, err := models.DefaultRoleModel().SetTx(tx).SetConn(s.conn).AddRole(values.Get("name"), values.Get("slug"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return errors.New("新增角色發生錯誤，可能原因:角色名稱已被註冊"), nil
@@ -120,11 +121,11 @@ func (s *SystemTable) GetRolesPanel(conn db.Connection) (rolesTable Table) {
 
 	// 設置角色更新函式
 	formList.SetUpdateFunc(func(values form2.Values) error {
-		if models.DefaultRoleModel().SetConn(conn).IsSlugExist(values.Get("slug"), values.Get("id")) {
+		if models.DefaultRoleModel().SetConn(s.conn).IsSlugExist(values.Get("slug"), values.Get("id")) {
 			return errors.New("角色標誌已經存在")
 		}
 		// 設置RoleModel與ID
-		role := models.GetRoleModelAndID(values.Get("id")).SetConn(conn)
+		role := models.GetRoleModelAndID(values.Get("id")).SetConn(s.conn)
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新角色

@@ -1,72 +1,78 @@
 package controller
 
 import (
+	"hilive/context"
 	"hilive/guard"
 	"hilive/models"
 	"hilive/modules/auth"
+	"hilive/modules/config"
 	"hilive/modules/menu"
+	"hilive/modules/parameter"
 	"hilive/modules/response"
-
-	"github.com/gin-gonic/gin"
+	"hilive/modules/table"
 )
 
 // NewMenu 新建菜單POST功能
-func (h *Handler) NewMenu(ctx *gin.Context) {
+func (h *Handler) NewMenu(ctx *context.Context) {
+	// 取得Parameters["new_menu_param"]
 	param := guard.GetNewMenuParam(ctx)
 	if param.Alert != "" {
-		h.Alert = param.Alert
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+		h.getMenuInfoPanel(ctx, param.Alert)
+		ctx.AddHeader("Content-Type", "text/html; charset=utf-8")
+		ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuNewURL)
 		return
 	}
-	// GetUserByMiddleware 取得middleware驗證後的user
-	user := auth.GetUserByMiddleware()
+
+	// 取得目前登入用戶(Context.UserValue["user"])並轉換成UserModel
+	user := auth.Auth(ctx)
 
 	// 新建菜單
-	menuModel, err := models.DefaultMenuModel().SetConn(h.Conn).
-		New(param.Title, param.Icon, param.URL, param.Header, param.ParentID, (menu.GetMenuInformation(user, h.Conn)).MaxOrder+1)
+	menuModel, err := models.DefaultMenuModel().SetConn(h.conn).
+		New(param.Title, param.Icon, param.URL, param.Header, param.ParentID, (menu.GetMenuInformation(user, h.conn)).MaxOrder+1)
 	if err != nil {
-		h.Alert = "新建菜單發生錯誤"
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuNewURL)
+		h.showNewMenu(ctx, "新建菜單發生錯誤，請重新操作")
+		ctx.AddHeader("Content-Type", "text/html; charset=utf-8")
+		ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuNewURL)
 		return
 	}
 
 	for _, roleID := range param.Roles {
 		_, err = menuModel.AddRole(roleID)
 		if err != nil {
-			h.Alert = "新建角色發生錯誤"
-			ctx.Header("Content-Type", "text/html; charset=utf-8")
-			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuNewURL)
+			h.showNewMenu(ctx, "新建菜單角色發生錯誤，請重新操作")
+			ctx.AddHeader("Content-Type", "text/html; charset=utf-8")
+			ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuNewURL)
 			return
 		}
 	}
 	// 增加MaxOrder
-	menu.GetMenuInformation(user, h.Conn).MaxOrder++
-	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+	menu.GetMenuInformation(user, h.conn).MaxOrder++
+
+	h.getMenuInfoPanel(ctx, "")
+	ctx.AddHeader("Content-Type", "text/html; charset=utf-8")
+	ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuURL)
 }
 
 // EditMenu 編輯菜單POST功能
-func (h *Handler) EditMenu(ctx *gin.Context) {
+func (h *Handler) EditMenu(ctx *context.Context) {
 	param := guard.GetEditMenuParam(ctx)
 	if param.Alert != "" {
-		h.Alert = param.Alert
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+		h.getMenuInfoPanel(ctx, param.Alert)
+		ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuURL)
 		return
 	}
 
 	// 建立MenuModel
-	menuModel := models.SetMenuModelByID(param.ID).SetConn(h.Conn)
+	menuModel := models.SetMenuModelByID(param.ID).SetConn(h.conn)
 
 	// 先刪除所有角色
 	err := menuModel.DeleteRoles()
 	if err != nil {
 		if err.Error() != "沒有影響任何資料" {
-			h.Alert = "刪除角色發生錯誤"
-			ctx.Header("Content-Type", "text/html; charset=utf-8")
-			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+			formInfo, _ := table.GetMenuPanel(h.conn).
+				GetDataWithID(parameter.DefaultParameters().SetPKs(ctx.Query("id")), h.services)
+			h.showEditMenu(ctx, formInfo, "刪除角色發生錯誤，請重新操作")
+			ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuURL)
 			return
 		}
 	}
@@ -75,9 +81,10 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	for _, roleID := range param.Roles {
 		_, err = menuModel.AddRole(roleID)
 		if err != nil {
-			h.Alert = "新建角色發生錯誤"
-			ctx.Header("Content-Type", "text/html; charset=utf-8")
-			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+			formInfo, _ := table.GetMenuPanel(h.conn).
+				GetDataWithID(parameter.DefaultParameters().SetPKs(ctx.Query("id")), h.services)
+			h.showEditMenu(ctx, formInfo, "新增角色發生錯誤，請重新操作")
+			ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuURL)
 			return
 		}
 	}
@@ -86,21 +93,23 @@ func (h *Handler) EditMenu(ctx *gin.Context) {
 	_, err = menuModel.Update(param.Title, param.Icon, param.URL, param.Header, param.ParentID)
 	if err != nil {
 		if err.Error() != "沒有影響任何資料" {
-			h.Alert = "更新菜單資料發生錯誤"
-			ctx.Header("Content-Type", "text/html; charset=utf-8")
-			ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+			formInfo, _ := table.GetMenuPanel(h.conn).
+				GetDataWithID(parameter.DefaultParameters().SetPKs(ctx.Query("id")), h.services)
+			h.showEditMenu(ctx, formInfo, "更新角色發生錯誤，請重新操作")
+			ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuURL)
 			return
 		}
 	}
 
-	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", "/"+h.Config.URLPrefix+h.Config.MenuURL)
+	h.getMenuInfoPanel(ctx, "")
+	ctx.AddHeader("Content-Type", "text/html; charset=utf-8")
+	ctx.AddHeader("X-PJAX-Url", config.Prefix()+h.config.MenuURL)
 }
 
 // DeleteMenu 刪除菜單POST功能
-func (h *Handler) DeleteMenu(ctx *gin.Context) {
+func (h *Handler) DeleteMenu(ctx *context.Context) {
 	param := guard.GetDeleteMenuParam(ctx)
 	// 刪除
-	models.SetMenuModelByID(param.ID).SetConn(h.Conn).Delete()
+	models.SetMenuModelByID(param.ID).SetConn(h.conn).Delete()
 	response.OkWithMsg(ctx, "刪除資料成功")
 }

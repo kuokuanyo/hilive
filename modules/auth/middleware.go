@@ -1,68 +1,53 @@
 package auth
 
 import (
+	"hilive/context"
 	"hilive/models"
 	"hilive/modules/config"
 	"hilive/modules/db"
 	"net/http"
 	"net/url"
-	"text/template"
-
-	"github.com/gin-gonic/gin"
 )
 
-var (
-	// UserValue 紀錄UserModel
-	userValue = make(map[string]interface{})
-)
+// MiddlewareCallback is type of callback function.
+type MiddlewareCallback func(ctx *context.Context)
 
 // Invoker 中間件驗證
 type Invoker struct {
 	prefix                 string
-	authFailCallback       gin.HandlerFunc
-	permissionDenyCallback gin.HandlerFunc
+	authFailCallback       MiddlewareCallback
+	permissionDenyCallback MiddlewareCallback
 	conn                   db.Connection
-}
-
-// GetUserByMiddleware 取得middleware驗證後的user
-func GetUserByMiddleware() models.UserModel {
-	return userValue["user"].(models.UserModel)
 }
 
 // DefaultInvoker 預設Invoker
 func DefaultInvoker(conn db.Connection) *Invoker {
 	return &Invoker{
 		prefix: config.Prefix(),
-		authFailCallback: func(ctx *gin.Context) {
+		authFailCallback: func(ctx *context.Context) {
 			if ctx.Request.URL.Path == "/admin"+config.GetLoginURL() {
 				return
 			}
 			if ctx.Request.URL.Path == "/admin/logout" {
-				_, err := template.New("").Parse(``)
-				if err != nil {
-					panic("模板發生錯誤")
-				}
-				ctx.Header("Location", "/admin"+config.GetLoginURL())
-				ctx.Status(http.StatusFound)
+				ctx.Write(302, map[string]string{
+					"Location": config.Prefix() + config.GetLoginURL(),
+				}, ``)
 				return
 			}
 			param := ""
-			if ref := ctx.GetHeader("Referer"); ref != "" {
+			if ref := ctx.Headers("Referer"); ref != "" {
 				param = "?ref=" + url.QueryEscape(ref)
 			}
 
 			u := "/admin" + config.GetLoginURL() + param
 			_, err := ctx.Request.Cookie("session")
-			referer := ctx.GetHeader("Referer")
+			referer := ctx.Headers("Referer")
 
-			if (ctx.GetHeader("X-PJAX") == "" && ctx.Request.Method != "GET") ||
+			if (ctx.Headers("X-PJAX") == "" && ctx.Request.Method != "GET") ||
 				err != nil || referer == "" {
-				_, err := template.New("").Parse(``)
-				if err != nil {
-					panic("模板發生錯誤")
-				}
-				ctx.Header("Location", u)
-				ctx.Status(http.StatusFound)
+				ctx.Write(302, map[string]string{
+					"Location": u,
+				}, ``)
 			} else {
 				msg := "登入逾時，請重新登入"
 				h := `<script>
@@ -81,22 +66,17 @@ func DefaultInvoker(conn db.Connection) *Invoker {
 					location.href = "` + u + `"
 				}
 			</script>`
-				tmpl, err := template.New("").Parse(h)
-				if err != nil {
-					panic("模板發生錯誤")
-				}
-				tmpl.Execute(ctx.Writer, nil)
-				ctx.Status(http.StatusOK)
+				ctx.HTML(http.StatusOK, h)
 			}
 		},
-		permissionDenyCallback: func(ctx *gin.Context) {
-			if ctx.GetHeader("X-PJAX") == "" && ctx.Request.Method != "GET" {
+		permissionDenyCallback: func(ctx *context.Context) {
+			if ctx.Headers("X-PJAX") == "" && ctx.Request.Method != "GET" {
 				ctx.JSON(http.StatusForbidden, map[string]interface{}{
 					"code": http.StatusForbidden,
 					"msg":  "permission denied",
 				})
 			} else {
-				tmpl, err := template.New("").Parse(`<div class="missing-content">
+				h := `<div class="missing-content">
 				<div class="missing-content-title">403</div>
 				<div class="missing-content-title-subtitle">Sorry, you don't have access to this page.</div>
 			</div>
@@ -117,12 +97,8 @@ func DefaultInvoker(conn db.Connection) *Invoker {
 				line-height: 1.6;
 				text-align: center;
 			}
-			</style>`)
-				if err != nil {
-					panic("模板發生錯誤")
-				}
-				tmpl.Execute(ctx.Writer, nil)
-				ctx.Status(http.StatusForbidden)
+			</style>`
+				ctx.HTML(http.StatusForbidden, h)
 			}
 		},
 		conn: conn,
@@ -130,11 +106,11 @@ func DefaultInvoker(conn db.Connection) *Invoker {
 }
 
 // Middleware 驗證，判斷用戶是否有權限
-func (invoker *Invoker) Middleware(conn db.Connection) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
+func (invoker *Invoker) Middleware(conn db.Connection) context.Handler {
+	return func(ctx *context.Context) {
 		user, authOk, permissionOk := Filter(ctx, conn)
 		if authOk && permissionOk {
-			userValue["user"] = user
+			ctx.SetUserValue("user", user)
 			ctx.Next()
 			return
 		}
@@ -152,7 +128,7 @@ func (invoker *Invoker) Middleware(conn db.Connection) gin.HandlerFunc {
 }
 
 // Filter 透過用戶id取得角色權限菜單，並判斷用戶使否有權限訪問該頁面
-func Filter(ctx *gin.Context, conn db.Connection) (models.UserModel, bool, bool) {
+func Filter(ctx *context.Context, conn db.Connection) (models.UserModel, bool, bool) {
 	var (
 		user = models.UserModel{Base: models.Base{TableName: "users"}}
 		id   float64
@@ -203,4 +179,50 @@ func GetUserByID(id int64, conn db.Connection) (user models.UserModel, ok bool) 
 		ok = true
 	}
 	return
+}
+
+// GetCurUser 先透過cookie值(session)取得用戶id，接著判斷用戶角色、權限及可用菜單
+func GetCurUser(sesKey string, conn db.Connection) (user models.UserModel, ok bool) {
+	if sesKey == "" {
+		ok = false
+		return
+	}
+
+	// 取得session資料表的cookie_values[key]的值(id)，如果沒有則回傳-1
+	id := GetUserID(sesKey, conn)
+	if id == -1 {
+		ok = false
+		return
+	}
+	// GetCurUserByID 透過參數(id)取得role、permission及可用menu
+	return GetCurUserByID(id, conn)
+}
+
+// GetCurUserByID 透過參數(id)取得role、permission及可用menu
+func GetCurUserByID(id int64, conn db.Connection) (user models.UserModel, ok bool) {
+	// 透過參數(id)取得UserModel(struct)
+	user = models.DefaultUserModel().SetConn(conn).FindByID(id)
+	if user.ID == int64(0) {
+		ok = false
+		return
+	}
+
+	// 取得角色、權限及可使用菜單
+	user = user.GetUserRoles().GetUserPermissions().GetUserMenus()
+	// 檢查用戶是否有可訪問的menu
+	ok = len(user.MenuIDs) != 0 || user.IsSuperAdmin()
+	return
+}
+
+// GetUserID 取得session資料表的cookie_values[key]的值(id)，如果沒有則回傳-1
+func GetUserID(sesKey string, conn db.Connection) int64 {
+	// GetSessionByKey 取得session資料表的cookie_values[key]的值(id)
+	id, err := GetSessionByKey(sesKey, "user_id", conn)
+	if err != nil {
+		return -1
+	}
+	if idFloat64, ok := id.(float64); ok {
+		return int64(idFloat64)
+	}
+	return -1
 }

@@ -1,23 +1,23 @@
 package controller
 
 import (
+	"hilive/context"
 	"hilive/guard"
-
-	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 // EditForm 更新資料POST功能
-func (h *Handler) EditForm(ctx *gin.Context) {
+func (h *Handler) EditForm(ctx *context.Context) {
 	param := guard.GetEditForm(ctx)
 
 	err := param.Panel.UpdateData(param.MultiForm.Value)
 	if err != nil {
-		h.Alert = err.Error()
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-PJAX-Url", param.Path+"/edit?__edit_pk="+param.ID)
+		h.showEditForm(ctx, err.Error(), param.Panel, param.Param, param.Prefix)
+		ctx.AddHeader("X-PJAX-Url", param.Path+param.Param.DeletePK().DeleteEditPk().GetRouteParamStr())
 		return
 	}
 
-	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", param.Path+param.Param.DeletePK().GetRouteParamStr())
+	buf := h.showTable(ctx, param.Param.DeletePK(), param.Panel, param.Prefix, "")
+	ctx.HTML(http.StatusOK, buf.String())
+	ctx.AddHeader("X-PJAX-Url", param.Path+param.Param.DeletePK().DeleteEditPk().GetRouteParamStr())
 }

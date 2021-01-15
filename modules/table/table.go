@@ -3,6 +3,7 @@ package table
 import (
 	"errors"
 	"fmt"
+	"hilive/context"
 	"hilive/modules/db"
 	"hilive/modules/form"
 	"hilive/modules/paginator"
@@ -13,6 +14,14 @@ import (
 	"html/template"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
+)
+
+var (
+	services service.List
+	count    uint32
+	lock     sync.Mutex
 )
 
 // BaseTable 包含面板、表單資訊...等
@@ -45,10 +54,17 @@ type PanelInfo struct {
 
 // FormInfo 表單資訊
 type FormInfo struct {
-	FieldList   types.FormFields `json:"field_list"`
-	Title       string           `json:"title"`
-	Description string           `json:"description"`
+	FieldList      types.FormFields `json:"field_list"`
+	Title          string           `json:"title"`
+	Description    string           `json:"description"`
+	HideBackButton bool
 }
+
+// Generator func(ctx *context.Context) Table
+type Generator func(ctx *context.Context) Table
+
+// List 放置所有頁面及表單資訊
+type List map[string]Generator
 
 // Table interface
 type Table interface {
@@ -456,4 +472,37 @@ func (base *BaseTable) getDelimiter() string {
 		return "'"
 	}
 	return ""
+}
+
+// SetServices 設置serivces，services是套件中的全域變數
+func SetServices(srv service.List) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	if atomic.LoadUint32(&count) != 0 {
+		panic("can not initialize twice")
+	}
+	services = srv
+}
+
+// Combine 將頁面及表單資訊加入List中
+func (g List) Combine(list List) List {
+	for key, gen := range list {
+		if _, ok := g[key]; !ok {
+			g[key] = gen
+		}
+	}
+	return g
+}
+
+// CombineAll 將所有頁面及表單資訊加入List中
+func (g List) CombineAll(gens []List) List {
+	for _, list := range gens {
+		for key, gen := range list {
+			if _, ok := g[key]; !ok {
+				g[key] = gen
+			}
+		}
+	}
+	return g
 }

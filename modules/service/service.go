@@ -17,6 +17,14 @@ type Service interface {
 	Name() string
 }
 
+// Register 將參數將入services(map[string]Generator)中
+func Register(k string, gen Generator) {
+	if _, ok := services[k]; ok {
+		panic("service has been registered")
+	}
+	services[k] = gen
+}
+
 // GetServices 初始化List(map[string]Service)
 func GetServices() List {
 	var (

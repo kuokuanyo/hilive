@@ -1,25 +1,29 @@
 package controller
 
 import (
+	"bytes"
+	"hilive/context"
+	"hilive/models"
+	"hilive/modules/auth"
 	"hilive/modules/config"
 	"hilive/modules/db"
+	"hilive/modules/menu"
 	"hilive/modules/service"
 	"hilive/modules/table"
+	"hilive/modules/utils"
+	"hilive/views"
 	"html/template"
 	"regexp"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Handler struct
 type Handler struct {
-	Config        *config.Config
-	Conn          db.Connection
-	Gin           *gin.Engine
-	Services      service.List
-	Alert         string
-	TablelList map[string]func(conn db.Connection) table.Table
+	config   *config.Config
+	conn     db.Connection
+	services service.List
+	list     table.List
+	routes   context.RouterMap
 }
 
 // URLRoute 模板需要使用的URL路徑
@@ -34,11 +38,158 @@ type URLRoute struct {
 	PreviousURL string
 }
 
-// GetTable 取得table(面板資訊、表單資訊)
-func (h *Handler) GetTable(ctx *gin.Context, prefix string) table.Table {
-	return h.TablelList[prefix](h.Conn)
+// ExecuteParam 使用模板需要的參數
+type ExecuteParam struct {
+	TmplName     string
+	FormID       string
+	User         models.UserModel
+	PanelInfo    table.PanelInfo
+	FormInfo     table.FormInfo
+	AlertContent string
+	Menu         *menu.Menu
+	Config       *config.Config
+	URLRoute     URLRoute
+	Token        string
 }
 
+// ExecuteInfo 執行資訊面板的模板
+func (h *Handler) ExecuteInfo(ctx *context.Context, user models.UserModel,
+	panelInfo table.PanelInfo, route URLRoute, alertmsg string) *bytes.Buffer {
+	var (
+		tmpl *template.Template
+		err  error
+		name string
+		buf  = new(bytes.Buffer)
+	)
+
+	if ctx.IsPjax() {
+		name = "info_content"
+		tmpl, err = template.New(name).Funcs(DefaultFuncMap).Parse(views.TemplateList[name] + views.TemplateList["form"])
+	} else {
+		name = "layout"
+		tmpl, err = template.New(name).Funcs(DefaultFuncMap).Parse(views.TemplateList[name] +
+			views.TemplateList["head"] + views.TemplateList["header"] + views.TemplateList["sidebar"] +
+			views.TemplateList["form_content"] + views.TemplateList["menu_content"] +
+			views.TemplateList["info_content"] + views.TemplateList["alert_content"] +
+			views.TemplateList["admin_panel"] + views.TemplateList["form"])
+	}
+	if err != nil {
+		panic("使用資訊面板模板發生錯誤")
+	}
+	err = tmpl.ExecuteTemplate(buf, name, ExecuteParam{
+		TmplName:     "info",
+		FormID:       utils.UUID(8),
+		User:         user,
+		PanelInfo:    panelInfo,
+		AlertContent: alertmsg,
+		Menu:         menu.GetMenuInformation(user, h.conn).SetActiveClass(h.config.URLRemovePrefix(ctx.Path())),
+		Config:       h.config,
+		URLRoute:     route,
+	})
+	if err != nil {
+		panic("執行資訊面板模板發生錯誤")
+	}
+	return buf
+}
+
+// ExecuteForm 執行表單資訊的模板
+func (h *Handler) ExecuteForm(ctx *context.Context, user models.UserModel,
+	panelInfo table.FormInfo, route URLRoute, alertmsg string, TmplName string) *bytes.Buffer {
+	var (
+		tmpl *template.Template
+		err  error
+		name string
+		buf  = new(bytes.Buffer)
+	)
+
+	if ctx.IsPjax() {
+		name = TmplName + "_content"
+		tmpl, err = template.New(name).Funcs(DefaultFuncMap).Parse(views.TemplateList[name] + views.TemplateList["form"])
+	} else {
+		name = "layout"
+		tmpl, err = template.New(name).Funcs(DefaultFuncMap).Parse(views.TemplateList[name] +
+			views.TemplateList["head"] + views.TemplateList["header"] + views.TemplateList["sidebar"] +
+			views.TemplateList["form_content"] + views.TemplateList["menu_content"] +
+			views.TemplateList["info_content"] + views.TemplateList["alert_content"] +
+			views.TemplateList["form"] + views.TemplateList["admin_panel"])
+	}
+	if err != nil {
+		panic("使用表單模板發生錯誤")
+	}
+	err = tmpl.ExecuteTemplate(buf, name, ExecuteParam{
+		TmplName:     TmplName,
+		FormID:       utils.UUID(8),
+		User:         user,
+		FormInfo:     panelInfo,
+		AlertContent: alertmsg,
+		Menu:         menu.GetMenuInformation(user, h.conn).SetActiveClass(h.config.URLRemovePrefix(ctx.Path())),
+		Config:       h.config,
+		URLRoute:     route,
+		Token:        auth.ConvertInterfaceToTokenService(h.services.Get("token_csrf_helper")).AddToken(),
+	})
+	if err != nil {
+		panic("執行表單模板發生錯誤")
+	}
+	return buf
+}
+
+// ExecuteAlert 執行錯誤警告模板
+func (h *Handler) ExecuteAlert(ctx *context.Context, user models.UserModel, alertmsg string) *bytes.Buffer {
+	var (
+		tmpl *template.Template
+		err  error
+		name string
+		buf  = new(bytes.Buffer)
+	)
+
+	if ctx.IsPjax() {
+		name = "alert_content"
+		tmpl, err = template.New(name).Funcs(DefaultFuncMap).Parse(views.TemplateList[name])
+	} else {
+		name = "layout"
+		tmpl, err = template.New(name).Funcs(DefaultFuncMap).Parse(views.TemplateList[name] +
+			views.TemplateList["head"] + views.TemplateList["header"] + views.TemplateList["sidebar"] +
+			views.TemplateList["form_content"] + views.TemplateList["menu_content"] +
+			views.TemplateList["info_content"] + views.TemplateList["alert_content"] +
+			views.TemplateList["admin_panel"]+views.TemplateList["form"])
+	}
+	if err != nil {
+		panic("使用錯誤警告模板發生錯誤")
+	}
+	err = tmpl.ExecuteTemplate(buf, name, ExecuteParam{
+		TmplName:     "alert",
+		User:         user,
+		Menu:         menu.GetMenuInformation(user, h.conn).SetActiveClass(h.config.URLRemovePrefix(ctx.Path())),
+		AlertContent: alertmsg,
+		Config:       h.config,
+		URLRoute: URLRoute{
+			IndexURL:  config.Prefix() + h.config.IndexURL,
+			URLPrefix: config.Prefix(),
+		},
+	})
+	if err != nil {
+		panic("執行錯誤警告模板發生錯誤")
+	}
+	return buf
+}
+
+// NewHandler 設置Handler(struct)
+func NewHandler() *Handler {
+	return &Handler{}
+}
+
+// NewHandler 設置Handler(struct)
+func (h *Handler) NewHandler(cfg *config.Config, services service.List, conn db.Connection, list table.List) {
+	h.config = cfg
+	h.services = services
+	h.conn = conn
+	h.list = list
+}
+
+// GetTable 取得table(面板資訊、表單資訊)
+func (h *Handler) GetTable(ctx *context.Context, prefix string) table.Table {
+	return h.list[prefix](ctx)
+}
 
 // DefaultFuncMap 模板需要使用的函式
 var DefaultFuncMap = template.FuncMap{

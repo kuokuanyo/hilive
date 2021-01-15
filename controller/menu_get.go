@@ -1,222 +1,102 @@
 package controller
 
 import (
-	"hilive/models"
+	"bytes"
+	"hilive/context"
 	"hilive/modules/auth"
 	"hilive/modules/config"
-	"hilive/modules/menu"
 	"hilive/modules/parameter"
 	"hilive/modules/table"
-	"hilive/modules/utils"
-	"hilive/template/types"
-	"hilive/views/alert"
-	"hilive/views/form"
-	"hilive/views/menuviews"
-	"html/template"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 // ShowMenu menu GET功能
-func (h *Handler) ShowMenu(ctx *gin.Context) {
+func (h *Handler) ShowMenu(ctx *context.Context) {
 	// getMenuInfoPanel 取得menu顯示資訊面板
-	h.getMenuInfoPanel(ctx, h.Config.MenuURL, h.Alert)
+	h.getMenuInfoPanel(ctx, "")
 }
 
 // getMenuInfoPanel 取得menu前端資訊面板
-func (h *Handler) getMenuInfoPanel(ctx *gin.Context, url string, alert string) {
-	user := auth.GetUserByMiddleware()
-	formInfo := table.GetMenuPanel(h.Conn).GetNewForm(h.Services)
+func (h *Handler) getMenuInfoPanel(ctx *context.Context, alert string) {
+	// Auth 取得目前登入用戶(Context.UserValue["user"])並轉換成UserModel
+	user := auth.Auth(ctx)
 
-	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(url)
+	// GetNewForm 處理並設置表單欄位細節資訊(允許增加的表單欄位)
+	formInfo := table.GetMenuPanel(h.conn).GetNewForm(h.services)
 
 	route := URLRoute{
-		PreviousURL: config.Prefix() + h.Config.MenuURL,
+		PreviousURL: config.Prefix() + h.config.MenuURL,
 		URLPrefix:   config.Prefix(),
-		InfoURL:     config.Prefix() + h.Config.MenuURL + "/new",
-		IndexURL:    config.Prefix() + h.Config.IndexURL,
-		EditURL:     config.Prefix() + h.Config.MenuEditURL,
-		DeleteURL:   config.Prefix() + h.Config.MenuDeleteURL,
+		InfoURL:     config.Prefix() + h.config.MenuURL + "/new",
+		IndexURL:    config.Prefix() + h.config.IndexURL,
+		EditURL:     config.Prefix() + h.config.MenuEditURL,
+		DeleteURL:   config.Prefix() + h.config.MenuDeleteURL,
 	}
 
-	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(menuviews.MenuTmpl)
-	if err != nil {
-		panic("使用菜單模板發生錯誤")
-	}
-	if err := tmpl.Execute(ctx.Writer, struct {
-		FormID       string
-		User         models.UserModel
-		Menu         *menu.Menu
-		AlertContent string
-		Content      types.FormFields
-		Config       *config.Config
-		Token        string
-		URLRoute     URLRoute
-	}{
-		FormID:       utils.UUID(8),
-		User:         user,
-		Menu:         menuInfo,
-		AlertContent: alert,
-		Content:      formInfo.FieldList,
-		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
-		Config:       h.Config,
-		URLRoute:     route,
-	}); err == nil {
-		ctx.Status(http.StatusOK)
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-	} else {
-		panic("使用新建菜單模板發生錯誤")
-	}
-	if alert != "" {
-		h.Alert = ""
-	}
+	formInfo.HideBackButton = true
+	buf := h.ExecuteForm(ctx, user, formInfo, route, alert, "menu")
+	ctx.HTML(http.StatusOK, buf.String())
 }
 
 // ShowNewMenu new menu GET功能
-func (h *Handler) ShowNewMenu(ctx *gin.Context) {
-	h.showNewMenu(ctx, h.Config.MenuNewURL, h.Alert)
+func (h *Handler) ShowNewMenu(ctx *context.Context) {
+	h.showNewMenu(ctx, "")
 }
 
 // showNewMenu new menu面板
-func (h *Handler) showNewMenu(ctx *gin.Context, url string, alert string) {
-	// GetUserByMiddleware 取得middleware驗證後的user
-	user := auth.GetUserByMiddleware()
-	// GetMenuInformation 透過user取得menu資料表資訊
-	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(url)
+func (h *Handler) showNewMenu(ctx *context.Context, alert string) {
+	// Auth 取得目前登入用戶(Context.UserValue["user"])並轉換成UserModel
+	user := auth.Auth(ctx)
+
 	// 取得表單資訊
-	formInfo := table.GetMenuPanel(h.Conn).GetNewForm(h.Services)
+	formInfo := table.GetMenuPanel(h.conn).GetNewForm(h.services)
 
 	route := URLRoute{
-		PreviousURL: config.Prefix() + h.Config.MenuURL,
-		InfoURL:     config.Prefix() + h.Config.MenuNewURL,
+		PreviousURL: config.Prefix() + h.config.MenuURL,
+		InfoURL:     config.Prefix() + h.config.MenuNewURL,
 		URLPrefix:   config.Prefix(),
-		IndexURL:    config.Prefix() + h.Config.IndexURL,
+		IndexURL:    config.Prefix() + h.config.IndexURL,
 	}
 
-	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(form.FormTmpl)
-	if err != nil {
-		panic("使用新建菜單模板發生錯誤")
-	}
-	if err := tmpl.Execute(ctx.Writer, struct {
-		FormID       string
-		User         models.UserModel
-		Content      types.FormFields
-		AlertContent string
-		Menu         *menu.Menu
-		Config       *config.Config
-		URLRoute     URLRoute
-		Token        string
-	}{
-		FormID:       utils.UUID(8),
-		User:         user,
-		Content:      formInfo.FieldList,
-		AlertContent: alert,
-		Menu:         menuInfo,
-		Config:       h.Config,
-		URLRoute:     route,
-		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
-	}); err == nil {
-		ctx.Status(http.StatusOK)
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-	} else {
-		panic("使用新建菜單模板發生錯誤")
-	}
-	if alert != "" {
-		h.Alert = ""
-	}
+	buf := h.ExecuteForm(ctx, user, formInfo, route, alert, "form")
+	ctx.HTML(http.StatusOK, buf.String())
 }
 
 // ShowEditMenu edit menu GET功能
-func (h *Handler) ShowEditMenu(ctx *gin.Context) {
-	// 取得middleware驗證後的user
-	user := auth.GetUserByMiddleware()
-	// GetMenuInformation 透過user取得menu資料表資訊
-	menuInfo := menu.GetMenuInformation(user, h.Conn)
+func (h *Handler) ShowEditMenu(ctx *context.Context) {
+	// Auth 取得目前登入用戶(Context.UserValue["user"])並轉換成UserModel
+	user := auth.Auth(ctx)
 
+	buf := new(bytes.Buffer)
 	if ctx.Query("id") == "" {
-		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
-		tmpl.Execute(ctx.Writer, struct {
-			User         models.UserModel
-			Menu         *menu.Menu
-			AlertContent string
-			Config       *config.Config
-			URLRoute     URLRoute
-			IndexURL     string
-			URLPrefix    string
-		}{
-			User:         user,
-			Menu:         menuInfo,
-			AlertContent: "請填寫id參數",
-			Config:       h.Config,
-			IndexURL:     config.Prefix() + h.Config.IndexURL,
-			URLPrefix:    config.Prefix(),
-		})
+		buf = h.ExecuteAlert(ctx, user, "發生錯誤:請填寫需要編輯的id參數")
+		ctx.HTML(http.StatusOK, buf.String())
 		return
 	}
 
-	formInfo, err := table.GetMenuPanel(h.Conn).
-		GetDataWithID(parameter.DefaultParameters().SetPKs(ctx.Query("id")), h.Services)
+	formInfo, err := table.GetMenuPanel(h.conn).
+		GetDataWithID(parameter.DefaultParameters().SetPKs(ctx.Query("id")), h.services)
 	if err != nil {
-		tmpl, _ := template.New("").Funcs(DefaultFuncMap).Parse(alert.AlertTmpl)
-		tmpl.Execute(ctx.Writer, struct {
-			User         models.UserModel
-			Menu         *menu.Menu
-			AlertContent string
-			Config       *config.Config
-			URLRoute     URLRoute
-			IndexURL     string
-			URLPrefix    string
-		}{
-			User:         user,
-			Menu:         menuInfo,
-			AlertContent: err.Error(),
-			Config:       h.Config,
-			IndexURL:     config.Prefix() + h.Config.IndexURL,
-			URLPrefix:    config.Prefix(),
-		})
+		buf = h.ExecuteAlert(ctx, user, err.Error())
+		ctx.HTML(http.StatusOK, buf.String())
+		return
 	}
-	h.showEditMenu(ctx, formInfo, h.Config.MenuEditURL, h.Alert)
+	h.showEditMenu(ctx, formInfo, "")
 }
 
 // showEditMenu edit menu 模板語法
-func (h *Handler) showEditMenu(ctx *gin.Context, formInfo table.FormInfo, url string, alert string) {
-	// 取得middleware驗證後的user
-	user := auth.GetUserByMiddleware()
-	// GetMenuInformation 透過user取得menu資料表資訊
-	menuInfo := menu.GetMenuInformation(user, h.Conn).SetActiveClass(url)
+func (h *Handler) showEditMenu(ctx *context.Context, formInfo table.FormInfo, alert string) {
+	// Auth 取得目前登入用戶(Context.UserValue["user"])並轉換成UserModel
+	user := auth.Auth(ctx)
 
 	route := URLRoute{
-		InfoURL:     config.Prefix() + h.Config.MenuEditURL,
-		IndexURL:    config.Prefix() + h.Config.IndexURL,
+		InfoURL:     config.Prefix() + h.config.MenuEditURL,
+		IndexURL:    config.Prefix() + h.config.IndexURL,
 		URLPrefix:   config.Prefix(),
-		PreviousURL: config.Prefix() + h.Config.MenuURL,
+		PreviousURL: config.Prefix() + h.config.MenuURL,
 	}
 
-	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(form.FormTmpl)
-	if err != nil {
-		panic("使用編輯菜單模板發生錯誤")
-	}
-	tmpl.Execute(ctx.Writer, struct {
-		FormID       string
-		User         models.UserModel
-		Menu         *menu.Menu
-		AlertContent string
-		FormInfo     table.FormInfo
-		Config       *config.Config
-		URLRoute     URLRoute
-		Token        string
-	}{
-		FormID:       utils.UUID(8),
-		User:         user,
-		Menu:         menuInfo,
-		AlertContent: alert,
-		FormInfo:     formInfo,
-		Config:       h.Config,
-		URLRoute:     route,
-		Token:        auth.ConvertInterfaceToTokenService(h.Services.Get("token_csrf_helper")).AddToken(),
-	})
-	if alert != "" {
-		h.Alert = ""
-	}
+	buf := h.ExecuteForm(ctx, user, formInfo, route, alert, "form")
+	ctx.HTML(http.StatusOK, buf.String())
+	return
 }

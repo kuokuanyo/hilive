@@ -2,37 +2,34 @@ package engine
 
 import (
 	"hilive/adapter"
-	"hilive/controller"
-	"hilive/guard"
 	"hilive/models"
-	"hilive/modules/auth"
 	"hilive/modules/config"
 	"hilive/modules/db"
 	"hilive/modules/service"
-	"hilive/modules/table"
+	"hilive/plugins"
+	"hilive/plugins/admin"
 
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	// Router gin引擎
+	// gin引擎
 	r              *gin.Engine
 	defaultAdapter adapter.WebFrameWork
 )
 
-
 // Engine 核心組件，有PluginList及Adapter兩個屬性
 type Engine struct {
-	Adapter  adapter.WebFrameWork
-	config   *config.Config
-	Services service.List // 儲存資料庫引擎、Config(struct)
-	handler  controller.Handler
-	guard    guard.Guard
+	Adapter    adapter.WebFrameWork
+	config     *config.Config
+	Services   service.List // 儲存資料庫引擎、Config(struct)
+	PluginList []plugins.Plugin
 }
 
 // DefaultEngine 預設Engine(struct)
 func DefaultEngine() *Engine {
 	return &Engine{
+		Adapter:  defaultAdapter,
 		Services: service.GetServices(),
 	}
 }
@@ -47,6 +44,10 @@ func Register(ada adapter.WebFrameWork) {
 
 // InitDatabase 初始化資料庫引擎後將driver加入Engine.Services
 func (eng *Engine) InitDatabase(cfg config.Config) *Engine {
+	if eng.Adapter == nil {
+		panic("adapter is nil, import the default adapter or use AddAdapter method add the adapter")
+	}
+
 	// 設置Config(struct)title、theme、登入url、前綴url...資訊，如果config數值為空值則設置預設值
 	// ***此函式處理全局變數globalCfg
 	eng.config = config.SetGlobalConfig(cfg)
@@ -55,32 +56,32 @@ func (eng *Engine) InitDatabase(cfg config.Config) *Engine {
 	// InitDB初始化資料庫
 	eng.Services.Add(cfg.Database.Driver, db.GetConnectionByDriver(cfg.Database.Driver).InitDB(cfg.Database))
 
-	// 增加token的service
-	eng.Services.Add("token_csrf_helper", &auth.TokenService{
-		Tokens: make(auth.CSRFToken, 0),
-	})
+	if defaultAdapter == nil {
+		panic("adapter is nil")
+	}
+	return eng
+}
 
-	st := table.NewSystemTable(eng.GetConnectionByDriver(), eng.config)
-	// 設置頁面資訊及表單資訊map
-	tablelist := map[string]func(conn db.Connection) table.Table{
-		"manager":    st.GetManagerPanel,
-		"roles":      st.GetRolesPanel,
-		"permission": st.GetPermissionPanel,
+// FindPluginByName 尋找與參數符合的plugin(interface)，如果有回傳Plugin,true，反之nil, false
+func (eng *Engine) FindPluginByName(name string) (plugins.Plugin, bool) {
+	for _, plug := range eng.PluginList {
+		if plug.Name() == name {
+			return plug, true
+		}
+	}
+	return nil, false
+}
+
+// Use 設置Plugin、Admin、Guard、Handler等資訊
+func (eng *Engine) Use(router interface{}) error {
+	if eng.Adapter == nil {
+		panic("adapter is nil, import the default adapter or use AddAdapter method add the adapter")
 	}
 
-	eng.handler = controller.Handler{
-		Config:     eng.config,
-		Conn:       eng.GetConnectionByDriver(),
-		Gin:        r,
-		Services:   eng.Services,
-		TablelList: tablelist,
-	}
-
-	eng.guard = guard.Guard{
-		Conn:       eng.GetConnectionByDriver(),
-		Services:   eng.Services,
-		Config:     eng.config,
-		TablelList: tablelist,
+	// FindPluginByName 尋找與參數符合的plugin(interface)，如果有回傳Plugin,true，反之nil, false
+	_, exist := eng.FindPluginByName("admin")
+	if !exist {
+		eng.PluginList = append(eng.PluginList, admin.NewAdmin())
 	}
 
 	// 設置TableName、Conn
@@ -102,7 +103,24 @@ func (eng *Engine) InitDatabase(cfg config.Config) *Engine {
 
 	// 更新Config
 	eng.config.Update(m)
-	return eng
+
+	// 將config加入services中
+	eng.Services.Add("config", config.ConvertConfigToService(eng.config))
+
+	// 取得匹配的Services然後轉換成Connection(interface)
+	defaultConnection := db.GetConnectionFromService(eng.Services)
+
+	// SetConnection為WebFrameWork(interface)的方法
+	//設定連線
+	defaultAdapter.SetConnection(defaultConnection)
+	eng.Adapter.SetConnection(defaultConnection)
+
+	// 執行初始化plugin
+	for i := range eng.PluginList {
+		eng.PluginList[i].InitPlugin(eng.Services)
+	}
+
+	return eng.Adapter.Use(router, eng.PluginList)
 }
 
 // GetConnectionByDriver 透過資料庫引擎取得Connection(interface)
@@ -112,40 +130,4 @@ func (eng *Engine) GetConnectionByDriver() db.Connection {
 	// Get 取得匹配的資料庫引擎
 	// ConvertServiceToConnection 將Service轉換Connection
 	return db.ConvertServiceToConnection(eng.Services.Get(eng.config.Database.Driver))
-}
-
-// InitRouter 設置路由
-func (eng *Engine) InitRouter() *Engine {
-	// Default returns an Engine instance with the Logger and Recovery middleware already attached.
-	r = gin.Default()
-	router := r.Group("/admin")
-	router.Static("/assets", "./assets")
-
-
-	// 登入GET、POST
-	router.GET(eng.config.LoginURL, eng.handler.ShowLogin)
-	router.POST(eng.config.LoginURL, eng.handler.Auth)
-	// 註冊GET、POST
-	router.GET(eng.config.SignupURL, eng.handler.ShowSignup)
-	router.POST(eng.config.SignupURL, eng.handler.Signup)
-
-	authRoute := router.Use(auth.DefaultInvoker(eng.handler.Conn).Middleware(eng.handler.Conn))
-	// 菜單
-	authRoute.GET(eng.config.MenuURL, eng.handler.ShowMenu)
-	authRoute.GET(eng.config.MenuNewURL, eng.handler.ShowNewMenu)
-	authRoute.GET(eng.config.MenuEditURL, eng.handler.ShowEditMenu)
-	authRoute.POST(eng.config.MenuNewURL, eng.guard.MenuNew, eng.handler.NewMenu)
-	authRoute.POST(eng.config.MenuEditURL, eng.guard.MenuEdit, eng.handler.EditMenu)
-	authRoute.POST(eng.config.MenuDeleteURL, eng.guard.MenuDelete, eng.handler.DeleteMenu)
-
-	authPrefixRoute := router.Use(eng.guard.CheckPrefix)
-	// 使用者、角色、權限
-	authPrefixRoute.GET("/info/:__prefix", eng.handler.ShowInfo)
-	authPrefixRoute.GET("/info/:__prefix/new", eng.guard.ShowNewForm, eng.handler.ShowNewForm)
-	authPrefixRoute.GET("/info/:__prefix/edit", eng.guard.ShowEditForm, eng.handler.ShowEditForm)
-	authPrefixRoute.POST("/new/:__prefix", eng.guard.NewForm, eng.handler.NewForm)
-	authPrefixRoute.POST("/edit/:__prefix", eng.guard.EditForm, eng.handler.EditForm)
-	authPrefixRoute.POST("/delete/:__prefix", eng.guard.Delete, eng.handler.Delete)
-
-	return eng
 }

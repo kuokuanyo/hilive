@@ -1,23 +1,23 @@
 package controller
 
 import (
+	"hilive/context"
 	"hilive/guard"
-
-	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 // NewForm 新增資料POST功能
-func (h *Handler) NewForm(ctx *gin.Context) {
+func (h *Handler) NewForm(ctx *context.Context) {
 	param := guard.GetNewForm(ctx)
 
 	err := param.Panel.InsertData(param.MultiForm.Value)
 	if err != nil {
-		h.Alert = err.Error()
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("X-PJAX-Url", param.Path+"/new")
+		h.showNewForm(ctx, err.Error(), param.Panel, param.Param.GetRouteParamStr(), param.Prefix)
+		ctx.AddHeader("X-PJAX-Url", param.Path+"/new"+param.Param.GetRouteParamStr())
 		return
 	}
 
-	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("X-PJAX-Url", param.Path+param.Param.GetRouteParamStr())
+	buf := h.showTable(ctx, param.Param, param.Panel, param.Prefix, "")
+	ctx.HTML(http.StatusOK, buf.String())
+	ctx.AddHeader("X-PJAX-Url", param.Path+param.Param.GetRouteParamStr())
 }

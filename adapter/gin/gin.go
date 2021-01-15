@@ -1,10 +1,17 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"hilive/adapter"
+	"hilive/context"
+	"hilive/engine"
+	"hilive/models"
 	"hilive/modules/config"
+	"hilive/plugins"
+	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +35,51 @@ func init() {
 // Name 回傳框架名稱，同時也是service(interface)
 func (gins *Gin) Name() string {
 	return "gin"
+}
+
+// Use 添加處理程序至api的路徑及方法中
+func (gins *Gin) Use(app interface{}, plugs []plugins.Plugin) error {
+	return gins.GetUse(app, plugs, gins)
+}
+
+// AddHandler 增加處理程序
+func (gins *Gin) AddHandler(method, path string, handlers context.Handlers) {
+
+	// Handle第三個參數為主要處理程序
+	gins.app.Handle(strings.ToUpper(method), path, func(c *gin.Context) {
+		// 預設Context(struct)
+		ctx := context.NewContext(c.Request)
+
+		// 將參數設置在url中
+		for _, param := range c.Params {
+			if c.Request.URL.RawQuery == "" {
+				c.Request.URL.RawQuery += strings.Replace(param.Key, ":", "", -1) + "=" + param.Value
+			} else {
+				c.Request.URL.RawQuery += "&" + strings.Replace(param.Key, ":", "", -1) + "=" + param.Value
+			}
+		}
+
+		// SetHandlers將參數(handlers)設置至至Context.Handlers
+		// 執行迴圈Context.handlers[ctx.index](ctx)
+		ctx.SetHandlers(handlers).Next()
+
+		for key, head := range ctx.Response.Header {
+			c.Header(key, head[0])
+		}
+
+		if ctx.Response.Body != nil {
+			buf := new(bytes.Buffer)
+			_, _ = buf.ReadFrom(ctx.Response.Body)
+			c.String(ctx.Response.StatusCode, buf.String())
+		} else {
+			c.Status(ctx.Response.StatusCode)
+		}
+	})
+}
+
+// User 先透過cookie值(session)取得用戶id，接著判斷用戶角色、權限及可用菜單
+func (gins *Gin) User(ctx interface{}) (models.UserModel, bool) {
+	return gins.GetUser(ctx, gins)
 }
 
 // SetApp 將參數轉換成gin.Engine型態設置至Gin.app
@@ -94,5 +146,19 @@ func (gins *Gin) Redirect() {
 	gins.ctx.Redirect(302, config.Prefix()+config.GetLoginURL())
 	gins.ctx.Abort()
 }
+
+// Write 將參數(body)寫入
+func (gins *Gin) Write(body []byte) {
+	gins.ctx.Data(http.StatusOK, gins.HTMLContentType(), body)
+}
+
+// DisableLog return panic
+func (gins *Gin) DisableLog() { panic("not implement") }
+
+// Static return panic
+func (gins *Gin) Static(prefix, path string) { panic("not implement") }
+
+// Run return panic
+func (gins *Gin) Run() error { panic("not implement") }
 
 // -----下面為WebFrameWork方法-----end

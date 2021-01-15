@@ -4,6 +4,7 @@ import (
 	"hilive/modules/utils"
 	"html/template"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -163,9 +164,22 @@ func SetDefault(cfg Config) Config {
 
 // -----ConfigService的Service方法-----start
 
+// GetService 將參數轉換成Service(struct)並回傳Config(struct)
+func GetService(s interface{}) *Config {
+	if srv, ok := s.(*Service); ok {
+		return srv.Config
+	}
+	panic("wrong service")
+}
+
 // Name 為Service(interface)
 func (c *Service) Name() string {
 	return "config"
+}
+
+// ConvertConfigToService 將config轉換成service
+func ConvertConfigToService(c *Config) *Service {
+	return &Service{c}
 }
 
 // -----ConfigService的Service方法的Service方法-----end
@@ -181,6 +195,10 @@ func (c *Config) Update(m map[string]string) error {
 	c.Logo = template.HTML(m["logo"])
 	c.MiniLogo = template.HTML(m["mini_logo"])
 	c.LoginTitle = m["login_title"]
+	ses, _ := strconv.Atoi(m["session_life_time"])
+	if ses != 0 {
+		c.SessionLifeTime = ses
+	}
 	return nil
 }
 
@@ -227,6 +245,17 @@ func (d Database) ParamStr() {
 			d.Params["charset"] = "utf8mb4"
 		}
 	}
+}
+
+// URLRemovePrefix 將URL的前綴(ex:/admin)去除
+func (c *Config) URLRemovePrefix(url string) string {
+	if url == c.prefix {
+		return "/"
+	}
+	if c.prefix == "/" {
+		return url
+	}
+	return strings.Replace(url, c.prefix, "", 1)
 }
 
 // URL 處理URL

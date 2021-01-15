@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"bytes"
+	"hilive/context"
 	"hilive/models"
 	"hilive/modules/auth"
 	"hilive/modules/response"
@@ -11,12 +13,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Auth 登入平台POST功能
-func (h *Handler) Auth(ctx *gin.Context) {
+func (h *Handler) Auth(ctx *context.Context) {
 	var (
 		user models.UserModel
 	)
@@ -28,20 +29,20 @@ func (h *Handler) Auth(ctx *gin.Context) {
 	}
 
 	// 檢查登入用戶資訊並取得角色權限菜單
-	user, ok := auth.Check(password, phone, h.Conn)
+	user, ok := auth.Check(password, phone, h.conn)
 	if !ok {
 		response.BadRequest(ctx, "登入失敗")
 		return
 	}
 
 	// 設置cookie並加入header
-	err := auth.SetCookie(ctx, user, h.Conn)
+	err := auth.SetCookie(ctx, user, h.conn)
 	if err != nil {
 		response.BadRequest(ctx, "設置cookie發生錯誤")
 		return
 	}
 
-	if ref := ctx.GetHeader("Referer"); ref != "" {
+	if ref := ctx.Headers("Referer"); ref != "" {
 		if u, err := url.Parse(ref); err == nil {
 			v := u.Query()
 			if r := v.Get("ref"); r != "" {
@@ -54,39 +55,39 @@ func (h *Handler) Auth(ctx *gin.Context) {
 		}
 	}
 	response.OkWithData(ctx, map[string]interface{}{
-		"url": "/admin" + h.Config.IndexURL,
+		"url": "/admin" + h.config.IndexURL,
 	})
 	return
 }
 
 // ShowLogin 登入GET功能
-func (h *Handler) ShowLogin(ctx *gin.Context) {
+func (h *Handler) ShowLogin(ctx *context.Context) {
 	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(login.LoginTmpl)
 	if err != nil {
-		panic("使用登入的模板發生錯誤")
+		panic("使用登入模板發生錯誤")
 	}
 
-	if err := tmpl.Execute(ctx.Writer, struct {
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, struct {
 		URLPrefix string
 		Title     string
 		Logo      template.HTML
 		CdnURL    string
 	}{
-		URLPrefix: h.Config.AssertPrefix(),
-		Title:     h.Config.LoginTitle,
-		Logo:      h.Config.LoginLogo,
-		CdnURL:    h.Config.AssetURL,
+		URLPrefix: h.config.AssertPrefix(),
+		Title:     h.config.LoginTitle,
+		Logo:      h.config.LoginLogo,
+		CdnURL:    h.config.AssetURL,
 	}); err == nil {
-		ctx.Status(http.StatusOK)
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
+		ctx.HTML(http.StatusOK, buf.String())
 	} else {
-		ctx.Status(http.StatusOK)
+		ctx.HTML(http.StatusOK, "使用登入模板發生錯誤")
 		panic("使用登入的模板發生錯誤")
 	}
 }
 
 // Signup 註冊POST功能
-func (h *Handler) Signup(ctx *gin.Context) {
+func (h *Handler) Signup(ctx *context.Context) {
 	username := ctx.Request.FormValue("username")
 	phone := ctx.Request.FormValue("phone")
 	email := ctx.Request.FormValue("email")
@@ -110,12 +111,12 @@ func (h *Handler) Signup(ctx *gin.Context) {
 		return
 	}
 
-	userPhone := models.DefaultUserModel().SetConn(h.Conn).FindByPhone(phone)
+	userPhone := models.DefaultUserModel().SetConn(h.conn).FindByPhone(phone)
 	if userPhone.ID != int64(0) {
 		response.BadRequest(ctx, "電話號碼已被註冊過")
 		return
 	}
-	UerEmail := models.DefaultUserModel().SetConn(h.Conn).FindByEmail(email)
+	UerEmail := models.DefaultUserModel().SetConn(h.conn).FindByEmail(email)
 	if UerEmail.ID != int64(0) {
 		response.BadRequest(ctx, "信箱已被註冊過")
 		return
@@ -129,48 +130,48 @@ func (h *Handler) Signup(ctx *gin.Context) {
 	}
 
 	// 新增註冊資料並增加角色權限
-	user, err := models.DefaultUserModel().SetConn(h.Conn).
+	user, err := models.DefaultUserModel().SetConn(h.conn).
 		AddUser("testUserID", username, phone, email, string(hash[:]))
 	if err != nil {
 		response.BadRequest(ctx, "增加會員資料發生錯誤")
 		return
 	}
-	_, addRoleErr := user.SetConn(h.Conn).AddRole("1")
+	_, addRoleErr := user.SetConn(h.conn).AddRole("1")
 	if addRoleErr != nil {
 		response.BadRequest(ctx, "新增角色發生錯誤")
 		return
 	}
-	_, addPermissionErr := user.SetConn(h.Conn).AddPermission("1")
+	_, addPermissionErr := user.SetConn(h.conn).AddPermission("1")
 	if addPermissionErr != nil {
 		response.BadRequest(ctx, "新增權限發生錯誤")
 		return
 	}
 
 	response.OkWithData(ctx, map[string]interface{}{
-		"url": "/admin" + h.Config.LoginURL,
+		"url": "/admin" + h.config.LoginURL,
 	})
 }
 
 // ShowSignup 註冊用戶GET功能
-func (h *Handler) ShowSignup(ctx *gin.Context) {
+func (h *Handler) ShowSignup(ctx *context.Context) {
 	tmpl, err := template.New("").Funcs(DefaultFuncMap).Parse(signup.SignupTmpl)
 	if err != nil {
 		panic("使用註冊用戶模板發生錯誤")
 	}
 
-	if err := tmpl.Execute(ctx.Writer, struct {
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, struct {
 		URLPrefix string
 		Logo      template.HTML
 		CdnURL    string
 	}{
-		URLPrefix: h.Config.AssertPrefix(),
-		Logo:      h.Config.LoginLogo,
-		CdnURL:    h.Config.AssetURL,
+		URLPrefix: h.config.AssertPrefix(),
+		Logo:      h.config.LoginLogo,
+		CdnURL:    h.config.AssetURL,
 	}); err == nil {
-		ctx.Status(http.StatusOK)
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
+		ctx.HTML(http.StatusOK, buf.String())
 	} else {
-		ctx.Status(http.StatusOK)
+		ctx.HTML(http.StatusOK, "使用註冊用戶模板發生錯誤")
 		panic("使用註冊用戶模板發生錯誤")
 	}
 }

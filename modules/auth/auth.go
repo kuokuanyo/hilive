@@ -1,12 +1,15 @@
 package auth
 
 import (
+	"hilive/context"
 	"hilive/models"
 	"hilive/modules/config"
 	"hilive/modules/db"
+	"hilive/modules/service"
+	"net/http"
 	"sync"
+	"time"
 
-	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,6 +21,21 @@ type CSRFToken []string
 type TokenService struct {
 	Tokens CSRFToken //[]string
 	lock   sync.Mutex
+}
+
+// ***************初始化*******************
+// 將token_csrf_helper加入services(map[string]Generator)
+func init() {
+	service.Register("token_csrf_helper", func() (service.Service, error) {
+		return &TokenService{
+			Tokens: make(CSRFToken, 0),
+		}, nil
+	})
+}
+
+// Auth 取得目前登入用戶(Context.UserValue["user"])並轉換成UserModel
+func Auth(ctx *context.Context) models.UserModel {
+	return ctx.User().(models.UserModel)
 }
 
 // GetTokenServiceByService 藉由Service取得TokenService
@@ -89,7 +107,7 @@ func (s *TokenService) CheckToken(CheckToken string) bool {
 }
 
 // SetCookie 設置cookie並加入header
-func SetCookie(ctx *gin.Context, user models.UserModel, conn db.Connection) error {
+func SetCookie(ctx *context.Context, user models.UserModel, conn db.Connection) error {
 	ses, err := InitSession(ctx, conn)
 	if err != nil {
 		return err
@@ -99,8 +117,22 @@ func SetCookie(ctx *gin.Context, user models.UserModel, conn db.Connection) erro
 		return err
 	}
 
-	// add cookie
-	ses.Context.SetCookie(ses.Cookie, ses.Sid, config.GetSessionLifeTime(), "/", "", false, true)
+	cookie := http.Cookie{
+		Name:  ses.Cookie,
+		Value: ses.Sid,
+		// 回傳globalCfg.SessionLifeTime
+		MaxAge: config.GetSessionLifeTime(),
+		// cookie存在時間
+		Expires:  time.Now().Add(ses.Expires),
+		HttpOnly: true,
+		Path:     "/",
+	}
+	if config.GetDomain() != "" {
+		cookie.Domain = config.GetDomain()
+	}
+
+	// 設置cookie(struct)在response header Set-Cookie中
+	ses.Context.SetCookie(&cookie)
 	return nil
 }
 

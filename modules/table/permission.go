@@ -1,6 +1,7 @@
 package table
 
 import (
+	"hilive/context"
 	"database/sql"
 	dbsql "database/sql"
 	"errors"
@@ -16,7 +17,7 @@ import (
 )
 
 // GetPermissionPanel 取得權限資訊面板、表單資訊
-func (s *SystemTable)GetPermissionPanel(conn db.Connection) (permissionTable Table) {
+func (s *SystemTable) GetPermissionPanel(ctx *context.Context) (permissionTable Table) {
 	// DefaultBaseTable 建立預設的BaseTable(同時也是Table(interface))
 	permissionTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 
@@ -107,7 +108,7 @@ func (s *SystemTable)GetPermissionPanel(conn db.Connection) (permissionTable Tab
 		if values.IsEmpty("slug", "name", "http_path") {
 			return errors.New("權限名稱、權限標誌、可使用路徑不能為空")
 		}
-		if models.DefaultPermissionModel().SetConn(conn).IsSlugExist(values.Get("slug"), "") {
+		if models.DefaultPermissionModel().SetConn(s.conn).IsSlugExist(values.Get("slug"), "") {
 			return errors.New("權限標誌已經存在")
 		}
 
@@ -115,7 +116,7 @@ func (s *SystemTable)GetPermissionPanel(conn db.Connection) (permissionTable Tab
 		path := strings.TrimSpace(values.Get("http_path"))
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增權限資料
-			_, err := models.DefaultPermissionModel().SetTx(tx).SetConn(conn).AddPermission(
+			_, err := models.DefaultPermissionModel().SetTx(tx).SetConn(s.conn).AddPermission(
 				values.Get("name"), values.Get("slug"), method, path)
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
@@ -129,12 +130,12 @@ func (s *SystemTable)GetPermissionPanel(conn db.Connection) (permissionTable Tab
 
 	// 設置權限更新函式
 	formList.SetUpdateFunc(func(values form2.Values) error {
-		if models.DefaultPermissionModel().SetConn(conn).IsSlugExist(values.Get("slug"), values.Get("id")) {
+		if models.DefaultPermissionModel().SetConn(s.conn).IsSlugExist(values.Get("slug"), values.Get("id")) {
 			return errors.New("權限標誌已經存在")
 		}
 
 		// 設置RoleModel與ID
-		permission := models.GetPermissionModelAndID(values.Get("id")).SetConn(conn)
+		permission := models.GetPermissionModelAndID(values.Get("id")).SetConn(s.conn)
 
 		method := strings.Join(values["http_method[]"], ",")
 		path := strings.TrimSpace(values.Get("http_path"))

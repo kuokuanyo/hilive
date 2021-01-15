@@ -417,3 +417,9 @@ func (user UserModel) IsSuperAdmin() bool {
 	}
 	return false
 }
+
+// ReleaseConn 設置UserModel.Conn = nil後回傳UserModel
+func (user UserModel) ReleaseConn() UserModel {
+	user.Conn = nil
+	return user
+}

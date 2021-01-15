@@ -1,6 +1,7 @@
 package table
 
 import (
+	"hilive/context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -39,7 +40,7 @@ func (s *SystemTable) table(table string) *db.SQL {
 }
 
 // GetManagerPanel 取得用戶頁面、表單資訊
-func (s *SystemTable) GetManagerPanel(conn db.Connection) (managerTable Table) {
+func (s *SystemTable) GetManagerPanel(ctx *context.Context) (managerTable Table) {
 	// 建立BaseTable
 	managerTable = DefaultBaseTable(DefaultConfigTableByDriver(config.GetDatabaseDriver()))
 
@@ -174,7 +175,7 @@ func (s *SystemTable) GetManagerPanel(conn db.Connection) (managerTable Table) {
 		}
 		password = EncodePassword([]byte(values.Get("password")))
 
-		user := models.GetUserModelAndID("users", values.Get("id")).SetConn(conn)
+		user := models.GetUserModelAndID("users", values.Get("id")).SetConn(s.conn)
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料
@@ -233,7 +234,7 @@ func (s *SystemTable) GetManagerPanel(conn db.Connection) (managerTable Table) {
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增用戶資料
-			user, err := models.DefaultUserModel().SetTx(tx).SetConn(conn).AddUser(values.Get("userid"), values.Get("username"),
+			user, err := models.DefaultUserModel().SetTx(tx).SetConn(s.conn).AddUser(values.Get("userid"), values.Get("username"),
 				values.Get("phone"), values.Get("email"), password)
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {

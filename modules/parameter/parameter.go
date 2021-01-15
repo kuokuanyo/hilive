@@ -8,7 +8,7 @@ import (
 )
 
 // keys url參數
-var keys = []string{"__page", "__pageSize", "__sort", "__columns", "__prefix", "_pjax"}
+var keys = []string{"__page", "__pageSize", "__sort", "__columns", "__prefix", "_pjax", "__no_animation_"}
 
 // operators 運算符號
 var operators = map[string]string{
@@ -31,6 +31,7 @@ type Parameters struct {
 	Columns   []string
 	Fields    map[string][]string
 	URLPath   string
+	Animation bool
 }
 
 // DefaultParameters 預設Parameters(struct)
@@ -103,6 +104,12 @@ func GetParam(u *url.URL, defaultPageSize int) Parameters {
 		columnsArr = strings.Split(columns, ",")
 	}
 
+	// 判斷是否有動畫參數
+	animation := true
+	if values.Get("__no_animation_") == "true" {
+		animation = false
+	}
+
 	// 將除了keys以外(其他過濾條件)的參數加入fields中
 	fields := make(map[string][]string)
 	for key, value := range values {
@@ -128,6 +135,7 @@ func GetParam(u *url.URL, defaultPageSize int) Parameters {
 		SortField: sortField,
 		SortType:  sortType,
 		Fields:    fields,
+		Animation: animation,
 		Columns:   columnsArr,
 	}
 }
@@ -245,6 +253,7 @@ func (param Parameters) GetFixedParamWithoutSort() string {
 	for key, value := range param.Fields {
 		p[key] = value
 	}
+	p.Add("__no_animation_", "true")
 	if len(param.Columns) > 0 {
 		p.Add("__columns", strings.Join(param.Columns, ","))
 	}
@@ -267,9 +276,9 @@ func (param Parameters) GetNextPageRouteParam() string {
 	return "?" + p.Encode()
 }
 
-// URL 設置Page後回傳url參數
+// URL 設置第n頁的url參數
 func (param Parameters) URL(page string) string {
-	return param.URLPath + param.SetPage(page).GetRouteParamStr()
+	return param.URLPath + param.SetPage(page).GetRouteParamStr()+ "&" + "__no_animation_" + "=true"
 }
 
 // GetRouteParamWithoutPageSize 取得url參數路徑(沒有pagesize)
@@ -296,5 +305,11 @@ func (param Parameters) DeleteField(field string) Parameters {
 // DeletePK 刪除Parameters.Fields[__pk]
 func (param Parameters) DeletePK() Parameters {
 	delete(param.Fields, "__pk")
+	return param
+}
+
+// DeleteEditPk 刪除Parameters.Fields[__edit_pk]
+func (param Parameters) DeleteEditPk() Parameters {
+	delete(param.Fields, "__edit_pk")
 	return param
 }

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hilive/context"
 	"hilive/modules/config"
 	"hilive/modules/db"
 	"hilive/modules/db/sql"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -27,7 +27,7 @@ type Session struct {
 	Sid     string
 	Values  map[string]interface{}
 	Driver  PersistenceDriver
-	Context *gin.Context
+	Context *context.Context
 }
 
 // PersistenceDriver 持久性驅動
@@ -52,7 +52,7 @@ func DefaultDBDriver(conn db.Connection) *DBDriver {
 }
 
 // InitSession 初始化Session並取得session資料表的cookie_values欄位(ex:{"user_id":1})
-func InitSession(ctx *gin.Context, conn db.Connection) (*Session, error) {
+func InitSession(ctx *context.Context, conn db.Connection) (*Session, error) {
 	session := new(Session)
 	session.Expires = time.Second * time.Duration(config.GetSessionLifeTime())
 	session.Cookie = "session"
@@ -173,3 +173,10 @@ func (driver *DBDriver) Update(sid string, values map[string]interface{}) error 
 }
 
 // -----PersistenceDriver的方法-----end
+
+// GetSessionByKey 取得session資料表的cookie_values[key]的值(id)
+func GetSessionByKey(sesKey, key string, conn db.Connection) (interface{}, error) {
+	// Load 取得session資料表的cookie_values欄位(ex:{"user_id":1})
+	m, err := DefaultDBDriver(conn).Load(sesKey)
+	return m[key], err
+}

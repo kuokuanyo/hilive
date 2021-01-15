@@ -31,7 +31,7 @@ func GetPaginatorInformation(size int, params parameter.Parameters) Paginator {
 	totalPage := int(math.Ceil(float64(size) / float64(pageSizeInt)))
 
 	// 取得第一頁的url(不包含pagesize)
-	paginator.URL = params.URLPath + params.GetRouteParamWithoutPageSize("1")
+	paginator.URL = params.URLPath + params.GetRouteParamWithoutPageSize("1")+ "&" + "__no_animation_" + "=true"
 	paginator.Total = strconv.Itoa(size)
 
 	// 如果第一頁，則PreviousClass設置disabled
