@@ -1,9 +1,10 @@
 package table
 
 import (
-	"hilive/context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"hilive/context"
 	"hilive/models"
 	"hilive/modules/config"
 	"hilive/modules/db"
@@ -12,6 +13,7 @@ import (
 	"hilive/template/types"
 	"html/template"
 	"strconv"
+	"strings"
 )
 
 // GetRolesPanel 取得角色面板資訊、表單資訊
@@ -24,6 +26,32 @@ func (s *SystemTable) GetRolesPanel(ctx *context.Context) (rolesTable Table) {
 	info.AddField("ID", "id", db.Int).FieldSortable()
 	info.AddField("角色", "name", db.Varchar).FieldFilterable()
 	info.AddField("標誌", "slug", db.Varchar).FieldFilterable()
+	info.AddField("權限", "name", db.Varchar).FieldJoin(types.Join{
+		JoinTable: "role_permissions",
+		JoinField: "role_id",
+		Field:     "id",
+		BaseTable: "roles",
+	}).FieldJoin(types.Join{
+		JoinTable: "permissions",
+		JoinField: "id",
+		Field:     "permission_id",
+		BaseTable: "role_permissions",
+	}).SetDisplayFunc(func(model types.FieldModel) interface{} {
+		labels := template.HTML("")
+		labelValues := strings.Split(model.Value, types.JoinFieldValueDelimiter)
+
+		for key, label := range labelValues {
+			if key == len(labelValues)-1 {
+				labels += template.HTML(fmt.Sprintf(`<span class="label label-success" style="background-color: ;">%s</span>`, label))
+			} else {
+				labels += template.HTML(fmt.Sprintf(`<span class="label label-success" style="background-color: ;">%s</span>`, label) + "<br><br>")
+			}
+		}
+		if labels == template.HTML("") {
+			return "沒有權限"
+		}
+		return labels
+	}).FieldFilterable()
 	info.AddField("建立時間", "created_at", db.Timestamp)
 	info.AddField("更新時間", "updated_at", db.Timestamp)
 

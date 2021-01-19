@@ -22,7 +22,7 @@ func (h *Handler) ShowEditForm(ctx *context.Context) {
 func (h *Handler) ShowInfo(ctx *context.Context) {
 	prefix := ctx.Query("__prefix")
 
-	// GetTable 取得table(面板資訊、表單資訊
+	// GetTable 取得table(面板資訊、表單資訊)
 	panel := h.GetTable(ctx, prefix)
 	// GetParam 設置頁面資訊
 	params := parameter.GetParam(ctx.Request.URL, panel.GetInfo().DefaultPageSize)

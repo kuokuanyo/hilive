@@ -151,7 +151,7 @@ func (h *Handler) ExecuteAlert(ctx *context.Context, user models.UserModel, aler
 			views.TemplateList["head"] + views.TemplateList["header"] + views.TemplateList["sidebar"] +
 			views.TemplateList["form_content"] + views.TemplateList["menu_content"] +
 			views.TemplateList["info_content"] + views.TemplateList["alert_content"] +
-			views.TemplateList["admin_panel"]+views.TemplateList["form"])
+			views.TemplateList["admin_panel"] + views.TemplateList["form"])
 	}
 	if err != nil {
 		panic("使用錯誤警告模板發生錯誤")

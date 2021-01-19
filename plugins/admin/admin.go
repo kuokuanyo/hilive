@@ -41,9 +41,11 @@ func (admin *Admin) InitPlugin(services service.List) {
 	st := table.NewSystemTable(admin.Conn, c)
 
 	admin.list.Combine(table.List{
-		"manager":    st.GetManagerPanel,
-		"roles":      st.GetRolesPanel,
-		"permission": st.GetPermissionPanel,
+		"manager":           st.GetManagerPanel,
+		"roles":             st.GetRolesPanel,
+		"permission":        st.GetPermissionPanel,
+		"activity":          st.GetActivityPanel,
+		"activity_overview": st.GetActivityOverviewPanel,
 	})
 
 	// 設置Config

@@ -170,7 +170,7 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 		</ul>
 	</section>
 </aside>
-{{end}}`, "layout":`{{define "layout"}}
+{{end}}`, "layout": `{{define "layout"}}
  <!DOCTYPE html>
     <html>
 		{{ template "head" . }}
@@ -221,7 +221,7 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 		</div>
 		{{end}}
 	</section>
-{{end}}`, "form_content":`{{define "form_content"}}
+{{end}}`, "form_content": `{{define "form_content"}}
 	<script src="/admin/assets/dist/js/datatable.min.581cdc109b.js"></script>
 	<script src="/admin/assets/dist/js/form.min.f8678914e9.js"></script>
 	<script src="/admin/assets/dist/js/treeview.min.7780d3bb0f.js"></script>
@@ -355,6 +355,39 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 															class="form-control {{$data.Field}}" placeholder="{{$data.Placeholder}}">
 													</div>
 												{{end}}
+											{{else if eq $data.FormType.String "datetime"}}
+												{{if not .Editable}}
+													<div class="box box-solid box-default no-margin">
+														<div class="box-body" style="min-height: 40px;">
+															{{.Value}}
+														</div>
+														<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
+													</div>
+												{{else}}
+													<div class="input-group">
+														<span class="input-group-addon"><i class="fa fa-calendar fa-fw"></i></span>
+														<input {{if .Must}}required="1"{{end}} style="width: 170px" type="text"
+															name="{{.Field}}"
+															value="{{.Value}}"
+															class="form-control {{.Field}}" placeholder="{{.Placeholder}}">
+													</div>
+													<script>
+														$(function () {
+															$('input.{{.Field}}').parent().datetimepicker({{.OptionExt}});
+														});
+													</script>
+												{{end}}
+											{{else if eq $data.FormType.String "select"}}
+												<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}[]"
+												multiple="" data-placeholder="{{.Placeholder}}" tabindex="-1" aria-hidden="true"
+												{{if not .Editable}}disabled="disabled"{{end}}>
+													{{range $key, $v := .FieldOptions }}
+														<option value='{{$v.Value}}' {{$v.SelectedLabel}}>{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}</option>
+													{{end}}
+												</select>
+													<script>
+														$("select.{{.Field}}").select2({{.OptionExt}});
+													</script>
 											{{end}}	
 										</div>
 									</div>       
@@ -813,7 +846,7 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 			</div>
 		</div>
 	</section>
-{{end}}`,"menu_content": `{{define "menu_content"}}
+{{end}}`, "menu_content": `{{define "menu_content"}}
 	<script src="/admin/assets/dist/js/datatable.min.581cdc109b.js"></script>
 	<script src="/admin/assets/dist/js/form.min.f8678914e9.js"></script>
 	<script src="/admin/assets/dist/js/treeview.min.7780d3bb0f.js"></script>
@@ -1137,11 +1170,56 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 												<textarea {{if .Must}}required="1"{{end}} name="{{.Field}}" class="form-control" rows="5"
 												placeholder="{{.Placeholder}}"
 												{{if not .Editable}}disabled="disabled"{{end}}>{{.Value}}</textarea>
-											{{end}}
-											{{if ne .HelpMsg ""}}
-											<span class="help-block">
-												<i class="fa fa-info-circle"></i>&nbsp;{{.HelpMsg}}
-											</span>
+											{{else if eq $data.FormType.String "datetime"}}
+												{{if not .Editable}}
+													<div class="box box-solid box-default no-margin">
+														<div class="box-body" style="min-height: 40px;">
+															{{.Value}}
+														</div>
+														<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
+													</div>
+												{{else}}
+													<div class="input-group">
+														<span class="input-group-addon"><i class="fa fa-calendar fa-fw"></i></span>
+														<input {{if .Must}}required="1"{{end}} style="width: 170px" type="text"
+															name="{{.Field}}"
+															value="{{.Value}}"
+															class="form-control {{.Field}}" placeholder="{{.Placeholder}}">
+													</div>
+													<script>
+														$(function () {
+															$('input.{{.Field}}').parent().datetimepicker({{.OptionExt}});
+														});
+													</script>
+												{{end}}
+											{{else if eq $data.FormType.String "datetime_range"}}
+												{{if .Editable}}
+													<div class="input-group">
+														<span class="input-group-addon"><i class="fa fa-calendar fa-fw"></i></span>
+														<input type="text" id="{{.Field}}_start" name="{{.Field}}_start" value="{{.Value}}"
+															class="form-control {{.Field}}_start" placeholder="{{.Placeholder}}">
+														<span class="input-group-addon" style="border-left: 0; border-right: 0;">-</span>
+														<input type="text" id="{{.Field}}_end" name="{{.Field}}_end" value="{{.Value2}}"
+															class="form-control {{.Field}}_end" placeholder="{{.Placeholder}}">
+													</div>
+													<script>
+														$(function () {
+															$('input.{{.Field}}_start').datetimepicker({{.OptionExt}});
+															$('input.{{.Field}}_end').datetimepicker({{.OptionExt2}});
+															$('input.{{.Field}}_start').on("dp.change", function (e) {
+																$('input.{{.Field}}_end').data("DateTimePicker").minDate(e.date);
+															});
+															$('input.{{.Field}}_end').on("dp.change", function (e) {
+																$('input.{{.Field}}_start').data("DateTimePicker").maxDate(e.date);
+															});
+														});
+													</script>
+												{{else}}
+													<div class="box box-solid box-default no-margin">
+														<div class="box-body">{{.Value}}</div>
+													</div>
+													<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
+												{{end}}
 											{{end}}
 										</div>
 									</div>	           

@@ -27,7 +27,7 @@ func (admin *Admin) initRouter() *Admin {
 	authRoute.POST(admin.config.MenuDeleteURL, admin.guard.MenuDelete, admin.handler.DeleteMenu)
 
 	authPrefixRoute := route.Group("/", auth.DefaultInvoker(admin.Base.Conn).Middleware(admin.Base.Conn), admin.guard.CheckPrefix)
-	// 使用者、角色、權限
+	// 使用者、角色、權限、活動
 	authPrefixRoute.GET("/info/:__prefix", admin.handler.ShowInfo)
 	authPrefixRoute.GET("/info/:__prefix/new", admin.guard.ShowNewForm, admin.handler.ShowNewForm)
 	authPrefixRoute.GET("/info/:__prefix/edit", admin.guard.ShowEditForm, admin.handler.ShowEditForm)

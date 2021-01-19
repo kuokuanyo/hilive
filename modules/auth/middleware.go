@@ -78,7 +78,7 @@ func DefaultInvoker(conn db.Connection) *Invoker {
 			} else {
 				h := `<div class="missing-content">
 				<div class="missing-content-title">403</div>
-				<div class="missing-content-title-subtitle">Sorry, you don't have access to this page.</div>
+				<div class="missing-content-title-subtitle">抱歉, 您沒有權限訪問此網頁.</div>
 			</div>
 			
 			<style>

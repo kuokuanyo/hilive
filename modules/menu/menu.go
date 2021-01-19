@@ -5,7 +5,6 @@ import (
 	"hilive/modules/db"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 // Item 為資料表menu的欄位
@@ -94,27 +93,26 @@ func (menu *Menu) SetActiveClass(path string) *Menu {
 	reg, _ := regexp.Compile(`\?(.*)`)
 	path = reg.ReplaceAllString(path, "")
 	for i := 0; i < len(menu.List); i++ {
-		menu.List[i].Active = ""
+		menu.List[i].Active = "active"
 	}
 
-	for i := 0; i < len(menu.List); i++ {
-		if menu.List[i].URL == path && len(menu.List[i].ChildrenList) == 0 {
-			menu.List[i].Active = "active"
-			return menu
-		}
-		for j := 0; j < len(menu.List[i].ChildrenList); j++ {
-			if menu.List[i].ChildrenList[j].URL == path {
-				menu.List[i].Active = "active"
-				menu.List[i].ChildrenList[j].Active = "active"
-				return menu
-			}
-			menu.List[i].Active = ""
-			menu.List[i].ChildrenList[j].Active = ""
-		}
-		if strings.Contains(path, menu.List[i].URL) {
-			menu.List[i].Active = "active"
-			return menu
-		}
-	}
+	// for i := 0; i < len(menu.List); i++ {
+	// 	if menu.List[i].URL == path && len(menu.List[i].ChildrenList) == 0 {
+	// 		menu.List[i].Active = "active"
+	// 		return menu
+	// 	}
+	// 	for j := 0; j < len(menu.List[i].ChildrenList); j++ {
+	// 		if menu.List[i].ChildrenList[j].URL == path {
+	// 			menu.List[i].Active = "active"
+	// 			menu.List[i].ChildrenList[j].Active = "active"
+	// 			return menu
+	// 		}
+	// 		menu.List[i].Active = ""
+	// 		menu.List[i].ChildrenList[j].Active = ""
+	// 	}
+	// 	if strings.Contains(path, menu.List[i].URL) {
+	// 		menu.List[i].Active = "active"
+	// 	}
+	// }
 	return menu
 }

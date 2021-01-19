@@ -320,7 +320,7 @@ func (f *FormField) UpdateValue(id, val string, res map[string]interface{}, s *d
 	return f
 }
 
-// setFieldOptionFromTableBySQL 處理表單類型為選單的欄位並且選單名稱是由資料表取得的(ex:角色欄位)，設置FormField.FieldOptions
+// setFieldOptionFromTableBySQL 處理表單類型為選單的欄位並且選單名稱是由資料表取得的(ex:角色欄位)，設置FormField.FieldOptions(選項)
 func (f *FormField) setFieldOptionFromTableBySQL(s *db.SQL) {
 	if s != nil && f.FieldOptionFromTable.Table != "" && len(f.FieldOptions) == 0 {
 		queryRes, err := s.Table(f.FieldOptionFromTable.Table).

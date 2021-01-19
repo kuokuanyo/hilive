@@ -271,10 +271,10 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 
 	if len(ids) > 0 {
 		queryStatement = "select %s from %s%s where " + primaryKey + " in (%s) %s ORDER BY %s.%s %s"
-		countStatement = "select count(*) from %s where " + primaryKey + " in (%s)"
+		countStatement = "select count(*) from %s %s where " + primaryKey + " in (%s)"
 	} else {
 		queryStatement = "select %s from %s%s %s %s order by %s.%s %s LIMIT ? OFFSET ?"
-		countStatement = "select count(*) from %s %s"
+		countStatement = "select count(*) from %s %s %s"
 	}
 
 	// 取得所有欄位
@@ -341,7 +341,7 @@ func (base *BaseTable) getDataFromDatabase(params parameter.Parameters, services
 
 	// 計算資料數
 	if len(ids) == 0 {
-		countCmd := fmt.Sprintf(countStatement, base.Informatoin.Table, wheres)
+		countCmd := fmt.Sprintf(countStatement, base.Informatoin.Table, joins, wheres)
 		total, err := connection.Query(countCmd, whereArgs...)
 		if err != nil {
 			return PanelInfo{}, err

@@ -3,14 +3,11 @@ package main
 import (
 	"hilive/engine"
 	"hilive/modules/config"
-	"log"
-	"net/http"
 
 	_ "hilive/adapter/gin" // 框架引擎
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql" // mysql引擎
-	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {
@@ -42,6 +39,6 @@ func main() {
 	// Use 設置Plugin、Admin、Guard、Handler等資訊
 	engine.DefaultEngine().InitDatabase(cfg).Use(r)
 
-	// r.Run(":8080")
-	log.Fatal(http.Serve(autocert.NewListener("hilive.com.tw"), r))
+	r.Run(":8080")
+	// log.Fatal(http.Serve(autocert.NewListener("hilive.com.tw"), r))
 }
