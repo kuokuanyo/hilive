@@ -147,7 +147,8 @@ func (s *SystemTable) GetActivityPanel(ctx *context.Context) (activityTable Tabl
 		// 時間判斷
 		start, _ := time.ParseInLocation("2006-01-02 15:04:05", values.Get("start_time"), time.Local)
 		end, _ := time.ParseInLocation("2006-01-02 15:04:05", values.Get("end_time"), time.Local)
-		if !end.After(start) && start.Before(end) {
+		boolTime := end.After(start) && start.Before(end)
+		if boolTime == false {
 			return errors.New("時間設置發生錯誤，請重新設置(結束時間在開始時間之後)")
 		}
 

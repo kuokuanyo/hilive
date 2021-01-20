@@ -405,7 +405,7 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 									</button>
 								</div>
 								<div class="btn-group pull-left" style="margin-left:12px;">
-									<a href="/admin/info/manager" type="reset" class="btn btn-sm btn-default" data-loading-text="&nbsp;Save">
+									<a href= {{ .URLRoute.InfoURL}} type="reset" class="btn btn-sm btn-default" data-loading-text="&nbsp;Save">
 										<i class="icon fa fa-undo"></i>&nbsp;&nbsp;reset
 									</a>
 								</div>
@@ -1220,6 +1220,11 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 													</div>
 													<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
 												{{end}}
+											{{end}}
+											{{if ne .HelpMsg ""}}
+												<span class="help-block">
+													<i class="fa fa-info-circle"></i>&nbsp;{{.HelpMsg}}
+												</span>
 											{{end}}
 										</div>
 									</div>	           
