@@ -89,7 +89,17 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "開啟"},
 			{Value: "0", Text: "關閉"},
-		}).SetFieldMust()
+		}).SetFieldMust().
+		SetDisplayFunc(func(value types.FieldModel) interface{} {
+			var open []string
+			if value.ID == "" {
+				return open
+			}
+
+			openModel, _ := s.table("activity_game_open").Select("open").FindByID(value.ID)
+			open = append(open, strconv.FormatInt(openModel["open"].(int64), 10))
+			return open
+		})
 
 	formList.SetTable("activity_game_open").SetTitle("活動總覽").SetDescription("總覽管理")
 	// 設置活動新增函式
@@ -98,7 +108,7 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 			return errors.New("活動ID、遊戲名稱、是否開啟等欄位都不能為空")
 		}
 
-		if models.DefaultOverviewModel().SetConn(s.conn).IsGameExist(values.Get("game_id"), values.Get("activity_id"), values.Get("id")) {
+		if models.DefaultOverviewModel().SetConn(s.conn).IsGameExist(values.Get("game_id"), values.Get("activity_id"), "") {
 			return errors.New("此活動已建立該遊戲")
 		}
 

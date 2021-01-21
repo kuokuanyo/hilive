@@ -114,16 +114,15 @@ func (g GuestModel) UpdateActivityGuest(activityid, picture, name, introduce, de
 
 // IsOrderExist 檢查是否已經存在該嘉賓排序
 func (g GuestModel) IsOrderExist(order int, activityid, id string) bool {
+	if id == "" {
+		check, _ := g.Table(g.TableName).Where("guest_order", "=", order).
+			Where("activity_id", "=", activityid).First()
+		return check != nil
+	}
 	check, _ := g.Table(g.TableName).
 		Where("guest_order", "=", order).
 		Where("activity_id", "=", activityid).
+		Where("id", "!=", id).
 		First()
-	if check != nil {
-		model, _ := g.Table(g.TableName).
-			Where("id", "=", id).First()
-		if fmt.Sprintf("%v", model["guest_order"]) == fmt.Sprintf("%v", order) {
-			return false
-		}
-	}
 	return check != nil
 }

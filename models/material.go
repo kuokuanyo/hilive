@@ -110,16 +110,15 @@ func (m MaterialModel) UpdateActivityMaterial(activityid, name, introduce, link 
 
 // IsOrderExist 檢查是否已經存在該資料排序
 func (m MaterialModel) IsOrderExist(order int, activityid, id string) bool {
+	if id == "" {
+		check, _ := m.Table(m.TableName).Where("data_order", "=", order).
+			Where("activity_id", "=", activityid).First()
+		return check != nil
+	}
 	check, _ := m.Table(m.TableName).
 		Where("data_order", "=", order).
 		Where("activity_id", "=", activityid).
+		Where("id", "!=", id).
 		First()
-	if check != nil {
-		model, _ := m.Table(m.TableName).
-			Where("id", "=", id).First()
-		if fmt.Sprintf("%v", model["data_order"]) == fmt.Sprintf("%v", order) {
-			return false
-		}
-	}
 	return check != nil
 }

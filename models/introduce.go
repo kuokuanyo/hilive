@@ -105,16 +105,15 @@ func (i IntroduceModel) UpdateActivityIntroduce(activityid, title, content strin
 
 // IsOrderExist 檢查是否已經存在該介紹排序
 func (i IntroduceModel) IsOrderExist(order int, activityid, id string) bool {
+	if id == "" {
+		check, _ := i.Table(i.TableName).Where("introduce_order", "=", order).
+			Where("activity_id", "=", activityid).First()
+		return check != nil
+	}
 	check, _ := i.Table(i.TableName).
 		Where("introduce_order", "=", order).
 		Where("activity_id", "=", activityid).
+		Where("id", "!=", id).
 		First()
-	if check != nil {
-		model, _ := i.Table(i.TableName).
-			Where("id", "=", id).First()
-		if fmt.Sprintf("%v", model["introduce_order"]) == fmt.Sprintf("%v", order) {
-			return false
-		}
-	}
 	return check != nil
 }

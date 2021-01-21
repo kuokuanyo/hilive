@@ -55,7 +55,7 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 	formList.AddField("嘉賓簡介", "guest_introduce", db.Varchar, form.Text)
 	formList.AddField("嘉賓詳情", "guest_detail", db.Varchar, form.Text)
 	formList.AddField("嘉賓排序", "guest_order", db.Int, form.Text).SetFieldMust().
-	SetFieldHelpMsg(template.HTML("請輸入數字設置活動嘉賓的排序"))
+		SetFieldHelpMsg(template.HTML("請輸入數字設置活動嘉賓的排序"))
 
 	formList.SetTable("activity_guest").SetTitle("活動嘉賓").SetDescription("活動嘉賓管理")
 	// 設置嘉賓新增函式
@@ -65,7 +65,7 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 		}
 
 		order, _ := strconv.Atoi(values.Get("guest_order"))
-		if models.DefaultGuestModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
+		if models.DefaultGuestModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
 			return errors.New("活動已在該排序中建立活動嘉賓，請設置其他排序")
 		}
 
@@ -91,7 +91,7 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 		}
 
 		order, _ := strconv.Atoi(values.Get("guest_order"))
-		if models.DefaultIntroduceModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
+		if models.DefaultGuestModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
 			return errors.New("活動已在該排序中建立活動嘉賓，請設置其他排序")
 		}
 

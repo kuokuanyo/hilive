@@ -50,6 +50,11 @@ func (admin *Admin) InitPlugin(services service.List) {
 		"activity_schedule":  st.GetSchedulePanel,
 		"activity_guest":     st.GetGuestPanel,
 		"activity_material":  st.GetMaterialPanel,
+		"activity_applysign": st.GetApplysignPanel,
+		"message":            st.GetMessagePanel,
+		"topic":              st.GetTopicPanel,
+		"question":           st.GetQuestionPanel,
+		"danmu":              st.GetDanmuPanel,
 	})
 
 	// 設置Config

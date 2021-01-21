@@ -64,7 +64,7 @@ func (s *SystemTable) GetMaterialPanel(ctx *context.Context) (materialTable Tabl
 		}
 
 		order, _ := strconv.Atoi(values.Get("data_order"))
-		if models.DefaultMaterialModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
+		if models.DefaultMaterialModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
 			return errors.New("活動已在該排序中建立活動資料，請設置其他排序")
 		}
 

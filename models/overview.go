@@ -3,7 +3,6 @@ package models
 import (
 	dbsql "database/sql"
 	"errors"
-	"fmt"
 	"hilive/modules/db"
 	"hilive/modules/db/sql"
 	"strconv"
@@ -81,17 +80,16 @@ func (o OverviewModel) UpdateActivityOverview(activityid, game, open string) (in
 
 // IsGameExist 檢查該活動是否已經創建過相同遊戲
 func (o OverviewModel) IsGameExist(game, activityid, id string) bool {
+	if id == "" {
+		check, _ := o.Table(o.TableName).Where("game_id", "=", game).
+			Where("activity_id", "=", activityid).First()
+		return check != nil
+	}
 	check, _ := o.Table(o.TableName).
 		Where("game_id", "=", game).
 		Where("activity_id", "=", activityid).
+		Where("id", "!=", id).
 		First()
-	if check != nil {
-		model, _ := o.Table(o.TableName).
-			Where("id", "=", id).First()
-		if fmt.Sprintf("%v", model["game_id"]) == game {
-			return false
-		}
-	}
 	return check != nil
 }
 

@@ -61,7 +61,7 @@ func (s *SystemTable) GetIntroducePanel(ctx *context.Context) (introduceTable Ta
 		}
 
 		order, _ := strconv.Atoi(values.Get("introduce_order"))
-		if models.DefaultIntroduceModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
+		if models.DefaultIntroduceModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
 			return errors.New("活動已在該排序中建立活動介紹，請設置其他排序")
 		}
 
