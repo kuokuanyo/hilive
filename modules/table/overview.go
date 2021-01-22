@@ -85,22 +85,22 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 			activityGame = append(activityGame, strconv.FormatInt(gameModel["game_id"].(int64), 10))
 			return activityGame
 		})
-	formList.AddField("是否開啟遊戲", "open", db.Varchar, form.SelectSingle).
+	formList.AddField("是否開啟遊戲", "open", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
-			{Value: "1", Text: "開啟"},
-			{Value: "0", Text: "關閉"},
+			{Text: "開啟", Value: "1"},
+			{Text: "關閉", Value: "0"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
 			var open []string
 			if value.ID == "" {
-				return open
+				return []string{value.Value}
 			}
 
 			openModel, _ := s.table("activity_game_open").Select("open").FindByID(value.ID)
 			open = append(open, strconv.FormatInt(openModel["open"].(int64), 10))
 			return open
-		})
-
+		}).SetFieldDefault("1")
+		
 	formList.SetTable("activity_game_open").SetTitle("活動總覽").SetDescription("總覽管理")
 	// 設置活動新增函式
 	formList.SetInsertFunc(func(values form2.Values) error {

@@ -1220,6 +1220,65 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 													</div>
 													<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
 												{{end}}
+											{{else if eq $data.FormType.String "radio"}}
+												{{if .Editable}}
+													<div class="radio">
+													{{range $key, $v := .FieldOptions }}
+														<input type="radio" name="{{$data.Field}}" value="{{$v.Value}}"
+															class="minimal {{$data.Field}}" {{ $v.SelectedLabel}}
+															style="position: absolute; opacity: 0;">&nbsp;{{if ne $v.TextHTML ""}}{{$v.TextHTML}}{{else}}{{$v.Text}}{{end}}&nbsp;&nbsp;
+													{{end}}
+													</div>
+													<script>
+														$(function () {
+															$('input.{{.Field}}').iCheck({radioClass: 'iradio_minimal-blue'});
+														});
+													</script>
+												{{else}}
+													<div class="box box-solid box-default no-margin">
+														<div class="box-body">{{.Value}}</div>
+													</div>
+													<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
+												{{end}}
+											{{else if eq $data.FormType.String "email"}}
+												{{if .Editable}}
+													<div class="input-group">
+														<span class="input-group-addon"><i class="fa fa-envelope fa-fw"></i></span>
+														<input {{if .Must}}required="1"{{end}} type="email" name="{{.Field}}" value='{{.Value}}'
+															class="form-control {{.Field}}"
+															placeholder="{{.Placeholder}}">
+													</div>
+												{{else}}
+													<div class="box box-solid box-default no-margin">
+														<div class="box-body">{{.Value}}</div>
+													</div>
+													<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
+												{{end}}
+											{{else if eq $data.FormType.String "number"}}
+												{{if .Editable}}
+													<div class="input-group">
+														<input {{if .Must}}required="1"{{end}} style="width: 100px; text-align: center;" type="text"
+															name="{{.Field}}"
+															value="{{.Value}}" class="form-control {{.Field}}"
+															placeholder="{{.Header}}">
+													</div>
+												{{else}}
+													<div class="box box-solid box-default no-margin">
+														<div class="box-body">{{.Value}}</div>
+													</div>
+													<input type="hidden" class="{{.Field}}" name="{{.Field}}" value='{{.Value}}'>
+												{{end}}
+												<script>
+													$(function () {
+														$('.{{.Field}}:not(.initialized)')
+															.addClass('initialized')
+															.bootstrapNumber({
+																upClass: 'success',
+																downClass: 'primary',
+																center: true
+															});
+													})
+												</script>
 											{{end}}
 											{{if ne .HelpMsg ""}}
 												<span class="help-block">

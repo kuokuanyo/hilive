@@ -55,6 +55,10 @@ func (admin *Admin) InitPlugin(services service.List) {
 		"topic":              st.GetTopicPanel,
 		"question":           st.GetQuestionPanel,
 		"danmu":              st.GetDanmuPanel,
+		"super_danmu":        st.GetSuperdmPanel,
+		"picture":            st.GetPicturePanel,
+		"holdscreen":         st.GetHoldScreenPanel,
+		"contract":           st.GetContractPanel,
 	})
 
 	// 設置Config

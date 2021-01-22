@@ -53,11 +53,8 @@ func (m MaterialModel) AddActivityMaterial(activityid, name, introduce, link str
 	}
 
 	// 判斷order設置
-	res, err := m.SetTx(m.Base.Tx).Table("activity_material").Select("id").Where("activity_id", "=", activityid).All()
+	res, _ := m.SetTx(m.Base.Tx).Table("activity_material").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if err != nil {
-		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
-	}
 	if order > count+1 {
 		return m, fmt.Errorf("該活動目前總共設置%d筆的活動資料，如要新增活動資料，活動排序欄位請設置%d以下(包含)的數值", count, count+1)
 	}
@@ -87,11 +84,8 @@ func (m MaterialModel) UpdateActivityMaterial(activityid, name, introduce, link 
 	}
 
 	// 判斷order設置
-	res, err := m.SetTx(m.Base.Tx).Table("activity_material").Select("id").Where("activity_id", "=", activityid).All()
+	res, _ := m.SetTx(m.Base.Tx).Table("activity_material").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
-	}
 	if order > count {
 		return 0, fmt.Errorf("該活動目前總共設置%d筆的活動資料，如要更新活動資料，活動排序欄位請設置%d以下(包含)的數值", count, count)
 	}

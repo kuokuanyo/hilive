@@ -83,52 +83,52 @@ func (s *SystemTable) GetMessagePanel(ctx *context.Context) (messageTable Table)
 	formList := messageTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
-	formList.AddField("允許圖片上訊息牆", "picture_message", db.Tinyint, form.SelectSingle).SetFieldMust().
-		SetFieldOptions(types.FieldOptions{
-			{Value: "1", Text: "允許"},
-			{Value: "0", Text: "禁止"},
-		}).SetFieldMust().
-		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
-			if value.ID == "" {
-				return allow
-			}
+	formList.AddField("允許圖片上訊息牆", "picture_message", db.Int, form.Radio).
+	SetFieldOptions(types.FieldOptions{
+		{Text: "允許", Value: "1"},
+		{Text: "禁止", Value: "0"},
+	}).SetFieldMust().
+	SetDisplayFunc(func(value types.FieldModel) interface{} {
+		var stauts []string
+		if value.ID == "" {
+			return []string{value.Value}
+		}
 
-			allowModel, _ := s.table("activity_set_message").Select("picture_message").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["picture_message"].(int64), 10))
-			return allow
-		})
-	formList.AddField("允許圖片自動上訊息牆", "picture_auto", db.Tinyint, form.SelectSingle).SetFieldMust().
-		SetFieldOptions(types.FieldOptions{
-			{Value: "1", Text: "允許"},
-			{Value: "0", Text: "禁止"},
-		}).SetFieldMust().
-		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
-			if value.ID == "" {
-				return allow
-			}
+		statusModel, _ := s.table("activity_set_message").Select("picture_message").FindByID(value.ID)
+		stauts = append(stauts, strconv.FormatInt(statusModel["picture_message"].(int64), 10))
+		return stauts
+	}).SetFieldDefault("1")
+	formList.AddField("允許圖片自動上訊息牆", "picture_auto", db.Int, form.Radio).
+	SetFieldOptions(types.FieldOptions{
+		{Text: "允許", Value: "1"},
+		{Text: "禁止", Value: "0"},
+	}).SetFieldMust().
+	SetDisplayFunc(func(value types.FieldModel) interface{} {
+		var stauts []string
+		if value.ID == "" {
+			return []string{value.Value}
+		}
 
-			allowModel, _ := s.table("activity_set_message").Select("picture_auto").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["picture_auto"].(int64), 10))
-			return allow
-		})
-	formList.AddField("畫面自動刷新秒數", "refresh_second", db.Int, form.Text).SetFieldMust()
-	formList.AddField("防刷屏", "prevent_status_update", db.Tinyint, form.SelectSingle).SetFieldMust().
-		SetFieldOptions(types.FieldOptions{
-			{Value: "1", Text: "開啟"},
-			{Value: "0", Text: "關閉"},
-		}).SetFieldMust().
-		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
-			if value.ID == "" {
-				return allow
-			}
+		statusModel, _ := s.table("activity_set_message").Select("picture_auto").FindByID(value.ID)
+		stauts = append(stauts, strconv.FormatInt(statusModel["picture_auto"].(int64), 10))
+		return stauts
+	}).SetFieldDefault("1")
+	formList.AddField("畫面自動刷新秒數", "refresh_second", db.Int, form.Number).SetFieldMust().SetFieldDefault("5")
+	formList.AddField("防刷屏", "prevent_status_update", db.Int, form.Radio).
+	SetFieldOptions(types.FieldOptions{
+		{Text: "開啟", Value: "1"},
+		{Text: "關閉", Value: "0"},
+	}).SetFieldMust().
+	SetDisplayFunc(func(value types.FieldModel) interface{} {
+		var stauts []string
+		if value.ID == "" {
+			return []string{value.Value}
+		}
 
-			allowModel, _ := s.table("activity_set_message").Select("prevent_status_update").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["prevent_status_update"].(int64), 10))
-			return allow
-		})
+		statusModel, _ := s.table("activity_set_message").Select("prevent_status_update").FindByID(value.ID)
+		stauts = append(stauts, strconv.FormatInt(statusModel["prevent_status_update"].(int64), 10))
+		return stauts
+	}).SetFieldDefault("1")
 	formList.AddField("跑馬燈訊息", "message", db.Varchar, form.TextArea).
 		SetFieldHelpMsg(template.HTML("請一行設置一個跑馬燈訊息，若要輸入新的跑馬燈請換行"))
 

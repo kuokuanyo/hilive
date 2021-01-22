@@ -54,11 +54,8 @@ func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detai
 	}
 
 	// 判斷order設置
-	res, err := g.SetTx(g.Base.Tx).Table("activity_guest").Select("id").Where("activity_id", "=", activityid).All()
+	res, _ := g.SetTx(g.Base.Tx).Table("activity_guest").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if err != nil {
-		return g, errors.New("查詢不到此活動ID，請輸入正確活動ID")
-	}
 	if order > count+1 {
 		return g, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要新增活動介紹，活動排序欄位請設置%d以下(包含)的數值", count, count+1)
 	}
@@ -90,11 +87,8 @@ func (g GuestModel) UpdateActivityGuest(activityid, picture, name, introduce, de
 	}
 
 	// 判斷order設置
-	res, err := g.SetTx(g.Base.Tx).Table("activity_guest").Select("id").Where("activity_id", "=", activityid).All()
+	res, _ := g.SetTx(g.Base.Tx).Table("activity_guest").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
-	}
 	if order > count {
 		return 0, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要更新活動介紹，活動排序欄位請設置%d以下(包含)的數值", count, count)
 	}

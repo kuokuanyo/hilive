@@ -104,116 +104,116 @@ func (s *SystemTable) GetDanmuPanel(ctx *context.Context) (danmuTable Table) {
 	formList := danmuTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
-	formList.AddField("彈幕循環", "danmu_loop", db.Tinyint, form.SelectSingle).SetFieldMust().
+	formList.AddField("彈幕循環", "danmu_loop", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
-			{Value: "1", Text: "開啟"},
-			{Value: "0", Text: "關閉"},
+			{Text: "開啟", Value: "1"},
+			{Text: "關閉", Value: "0"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("danmu_loop").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["danmu_loop"].(int64), 10))
-			return allow
-		})
-	formList.AddField("顯示位置", "position", db.Int, form.SelectSingle).SetFieldMust().
+			statusModel, _ := s.table("activity_set_danmu").Select("danmu_loop").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["danmu_loop"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
+	formList.AddField("顯示位置", "position", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "頂部"},
 			{Value: "2", Text: "中部"},
 			{Value: "3", Text: "底部"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("position").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["position"].(int64), 10))
-			return allow
-		})
-	formList.AddField("顯示暱稱", "display_user", db.Tinyint, form.SelectSingle).SetFieldMust().
+			statusModel, _ := s.table("activity_set_danmu").Select("position").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["position"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
+	formList.AddField("顯示暱稱", "display_user", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "開啟"},
 			{Value: "0", Text: "關閉"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("display_user").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["display_user"].(int64), 10))
-			return allow
-		})
-	formList.AddField("彈幕大小", "danmu_size", db.Int, form.SelectSingle).SetFieldMust().
+			statusModel, _ := s.table("activity_set_danmu").Select("display_user").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["display_user"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
+	formList.AddField("彈幕大小", "danmu_size", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "小"},
 			{Value: "2", Text: "中"},
 			{Value: "3", Text: "大"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("danmu_size").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["danmu_size"].(int64), 10))
-			return allow
-		})
-	formList.AddField("彈幕速度", "danmu_speed", db.Int, form.SelectSingle).SetFieldMust().
+			statusModel, _ := s.table("activity_set_danmu").Select("danmu_size").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["danmu_size"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("2")
+	formList.AddField("彈幕速度", "danmu_speed", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "慢"},
 			{Value: "2", Text: "中"},
 			{Value: "3", Text: "快"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("danmu_speed").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["danmu_speed"].(int64), 10))
-			return allow
-		})
-	formList.AddField("彈幕密度", "danmu_density", db.Int, form.SelectSingle).SetFieldMust().
+			statusModel, _ := s.table("activity_set_danmu").Select("danmu_speed").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["danmu_speed"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("2")
+	formList.AddField("彈幕密度", "danmu_density", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "低"},
 			{Value: "2", Text: "中"},
 			{Value: "3", Text: "高"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("danmu_density").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["danmu_density"].(int64), 10))
-			return allow
-		})
-	formList.AddField("彈幕不透明度", "danmu_opacity", db.Int, form.SelectSingle).SetFieldMust().
+			statusModel, _ := s.table("activity_set_danmu").Select("danmu_density").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["danmu_density"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("2")
+	formList.AddField("彈幕不透明度", "danmu_opacity", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "低"},
 			{Value: "2", Text: "中"},
 			{Value: "3", Text: "高"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var allow []string
+			var stauts []string
 			if value.ID == "" {
-				return allow
+				return []string{value.Value}
 			}
 
-			allowModel, _ := s.table("activity_set_danmu").Select("danmu_opacity").FindByID(value.ID)
-			allow = append(allow, strconv.FormatInt(allowModel["danmu_opacity"].(int64), 10))
-			return allow
-		})
+			statusModel, _ := s.table("activity_set_danmu").Select("danmu_opacity").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["danmu_opacity"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("2")
 
 	formList.SetTable("activity_set_danmu").SetTitle("彈幕").SetDescription("彈幕管理")
 

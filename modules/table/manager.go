@@ -121,7 +121,7 @@ func (s *SystemTable) GetManagerPanel(ctx *context.Context) (managerTable Table)
 	formList.AddField("用戶照片", "picture", db.Varchar, form.Text)
 	formList.AddField("電話號碼", "phone", db.Varchar, form.Text).
 		SetFieldHelpMsg(template.HTML("用途: 登入")).SetFieldMust()
-	formList.AddField("信箱", "email", db.Varchar, form.Text).SetFieldMust()
+	formList.AddField("信箱", "email", db.Varchar, form.Email).SetFieldMust()
 	formList.AddField("角色", "role_id", db.Varchar, form.Select).
 		SetFieldOptionFromTable("roles", "slug", "id").
 		SetDisplayFunc(func(model types.FieldModel) interface{} {

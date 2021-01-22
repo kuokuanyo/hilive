@@ -47,6 +47,7 @@ type FormField struct {
 	NotAllowAdd          bool            `json:"not_allow_add"` // 不允許增加
 	Must                 bool            `json:"must"`          // 該欄位必填
 	Hide                 bool            `json:"hide"`
+	Default              template.HTML   `json:"Default"`
 	Joins                Joins           `json:"-"`
 	FieldDisplay         FieldDisplay
 	FieldOptions         FieldOptions
@@ -208,9 +209,11 @@ func (f *FormPanel) SetAllowAddValueOfField(services service.List, sql ...func(s
 		if !v.NotAllowAdd {
 			v.Editable = true
 			if len(sql) > 0 {
+				v.Value = v.Default
 				// UpdateValue 如果表單類型為選單，處理FormField.FieldOptions並設置已被選擇的選項、label 如果不是選單類型則設定FormField.Value
 				list = append(list, *(v.UpdateValue("", string(v.Value), make(map[string]interface{}), sql[0](services))))
 			} else {
+				v.Value = v.Default
 				list = append(list, *(v.UpdateValue("", string(v.Value), make(map[string]interface{}), nil)))
 			}
 		}
@@ -231,6 +234,12 @@ func (f *FormPanel) SetFieldOptionFromTable(table, textFieldName, valueFieldName
 // SetDisplayFunc 設置欄位過濾函式至DisplayFunc
 func (f *FormPanel) SetDisplayFunc(filter FieldFilterFunc) *FormPanel {
 	f.FieldList[f.curFieldListIndex].FieldDisplay.DisplayFunc = filter
+	return f
+}
+
+// SetFieldDefault 設定預設值
+func (f *FormPanel) SetFieldDefault(def string) *FormPanel {
+	f.FieldList[f.curFieldListIndex].Default = template.HTML(def)
 	return f
 }
 

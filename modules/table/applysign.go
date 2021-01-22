@@ -60,21 +60,21 @@ func (s *SystemTable) GetApplysignPanel(ctx *context.Context) (applysignTable Ta
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
 	formList.AddField("使用者名稱", "user_name", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("使用者頭像", "user_avater", db.Varchar, form.Text)
-	formList.AddField("簽到狀態", "status", db.Tinyint, form.SelectSingle).
+	formList.AddField("簽到狀態", "status", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
-			{Value: "1", Text: "簽到完成"},
-			{Value: "0", Text: "未簽到"},
+			{Text: "簽到完成", Value: "1"},
+			{Text: "未簽到", Value: "0"},
 		}).SetFieldMust().
 		SetDisplayFunc(func(value types.FieldModel) interface{} {
-			var status []string
+			var stauts []string
 			if value.ID == "" {
-				return status
+				return []string{value.Value}
 			}
 
 			statusModel, _ := s.table("activity_applysign").Select("status").FindByID(value.ID)
-			status = append(status, strconv.FormatInt(statusModel["status"].(int64), 10))
-			return status
-		})
+			stauts = append(stauts, strconv.FormatInt(statusModel["status"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
 
 	formList.SetTable("activity_applysign").SetTitle("報名簽到").SetDescription("簽到管理")
 	// 設置報名簽到新增函式
