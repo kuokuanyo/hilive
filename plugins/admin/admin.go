@@ -59,6 +59,9 @@ func (admin *Admin) InitPlugin(services service.List) {
 		"picture":            st.GetPicturePanel,
 		"holdscreen":         st.GetHoldScreenPanel,
 		"contract":           st.GetContractPanel,
+		"sign":               st.GetSignPanel,
+		"3Dsign":             st.Get3DSignPanel,
+		"countdown":          st.GetCountdownPanel,
 	})
 
 	// 設置Config

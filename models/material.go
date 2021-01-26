@@ -84,10 +84,18 @@ func (m MaterialModel) UpdateActivityMaterial(activityid, name, introduce, link 
 	}
 
 	// 判斷order設置
+	model, _ := m.SetTx(m.Base.Tx).Table("activity_material").Where("id", "=", m.ID).First()
+
 	res, _ := m.SetTx(m.Base.Tx).Table("activity_material").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if order > count {
-		return 0, fmt.Errorf("該活動目前總共設置%d筆的活動資料，如要更新活動資料，活動排序欄位請設置%d以下(包含)的數值", count, count)
+	if fmt.Sprintf("%v", model["activity_id"]) == activityid {
+		if order > count {
+			return 0, fmt.Errorf("該活動目前總共設置%d筆的活動資料，如要更新活動資料，資料排序欄位請設置%d以下(包含)的數值", count, count)
+		}
+	} else {
+		if order > count+1 {
+			return 0, fmt.Errorf("該活動目前總共設置%d筆的活動資料，如要更新活動資料，資料排序欄位請設置%d以下(包含)的數值", count, count+1)
+		}
 	}
 
 	fieldValues := sql.Value{

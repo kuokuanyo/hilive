@@ -51,6 +51,7 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 			}
 			return "關閉"
 		})
+	info.AddField("屏幕背景", "background", db.Varchar)
 
 	info.SetTable("activity_set_question").SetTitle("提問牆").SetDescription("提問牆管理").
 		// 刪除函式
@@ -75,65 +76,66 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
 	formList.AddField("提問訊息審核", "message_check", db.Int, form.Radio).
-	SetFieldOptions(types.FieldOptions{
-		{Text: "開啟", Value: "1"},
-		{Text: "關閉", Value: "0"},
-	}).SetFieldMust().
-	SetDisplayFunc(func(value types.FieldModel) interface{} {
-		var stauts []string
-		if value.ID == "" {
-			return []string{value.Value}
-		}
+		SetFieldOptions(types.FieldOptions{
+			{Text: "開啟", Value: "1"},
+			{Text: "關閉", Value: "0"},
+		}).SetFieldMust().
+		SetDisplayFunc(func(value types.FieldModel) interface{} {
+			var stauts []string
+			if value.ID == "" {
+				return []string{value.Value}
+			}
 
-		statusModel, _ := s.table("activity_set_question").Select("message_check").FindByID(value.ID)
-		stauts = append(stauts, strconv.FormatInt(statusModel["message_check"].(int64), 10))
-		return stauts
-	}).SetFieldDefault("1")
+			statusModel, _ := s.table("activity_set_question").Select("message_check").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["message_check"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
 	formList.AddField("匿名提問", "anonymous", db.Int, form.Radio).
-	SetFieldOptions(types.FieldOptions{
-		{Text: "開啟", Value: "1"},
-		{Text: "關閉", Value: "0"},
-	}).SetFieldMust().
-	SetDisplayFunc(func(value types.FieldModel) interface{} {
-		var stauts []string
-		if value.ID == "" {
-			return []string{value.Value}
-		}
+		SetFieldOptions(types.FieldOptions{
+			{Text: "開啟", Value: "1"},
+			{Text: "關閉", Value: "0"},
+		}).SetFieldMust().
+		SetDisplayFunc(func(value types.FieldModel) interface{} {
+			var stauts []string
+			if value.ID == "" {
+				return []string{value.Value}
+			}
 
-		statusModel, _ := s.table("activity_set_question").Select("anonymous").FindByID(value.ID)
-		stauts = append(stauts, strconv.FormatInt(statusModel["anonymous"].(int64), 10))
-		return stauts
-	}).SetFieldDefault("0")
+			statusModel, _ := s.table("activity_set_question").Select("anonymous").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["anonymous"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("0")
 	formList.AddField("隱藏已解答問題", "hide_answered", db.Int, form.Radio).
-	SetFieldOptions(types.FieldOptions{
-		{Text: "開啟", Value: "1"},
-		{Text: "關閉", Value: "0"},
-	}).SetFieldMust().
-	SetDisplayFunc(func(value types.FieldModel) interface{} {
-		var stauts []string
-		if value.ID == "" {
-			return []string{value.Value}
-		}
+		SetFieldOptions(types.FieldOptions{
+			{Text: "開啟", Value: "1"},
+			{Text: "關閉", Value: "0"},
+		}).SetFieldMust().
+		SetDisplayFunc(func(value types.FieldModel) interface{} {
+			var stauts []string
+			if value.ID == "" {
+				return []string{value.Value}
+			}
 
-		statusModel, _ := s.table("activity_set_question").Select("hide_answered").FindByID(value.ID)
-		stauts = append(stauts, strconv.FormatInt(statusModel["hide_answered"].(int64), 10))
-		return stauts
-	}).SetFieldDefault("1")
+			statusModel, _ := s.table("activity_set_question").Select("hide_answered").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["hide_answered"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
 	formList.AddField("二維碼", "qrcode", db.Int, form.Radio).
-	SetFieldOptions(types.FieldOptions{
-		{Text: "開啟", Value: "1"},
-		{Text: "關閉", Value: "0"},
-	}).SetFieldMust().
-	SetDisplayFunc(func(value types.FieldModel) interface{} {
-		var stauts []string
-		if value.ID == "" {
-			return []string{value.Value}
-		}
+		SetFieldOptions(types.FieldOptions{
+			{Text: "開啟", Value: "1"},
+			{Text: "關閉", Value: "0"},
+		}).SetFieldMust().
+		SetDisplayFunc(func(value types.FieldModel) interface{} {
+			var stauts []string
+			if value.ID == "" {
+				return []string{value.Value}
+			}
 
-		statusModel, _ := s.table("activity_set_question").Select("qrcode").FindByID(value.ID)
-		stauts = append(stauts, strconv.FormatInt(statusModel["qrcode"].(int64), 10))
-		return stauts
-	}).SetFieldDefault("1")
+			statusModel, _ := s.table("activity_set_question").Select("qrcode").FindByID(value.ID)
+			stauts = append(stauts, strconv.FormatInt(statusModel["qrcode"].(int64), 10))
+			return stauts
+		}).SetFieldDefault("1")
+	formList.AddField("屏幕背景", "background", db.Varchar, form.Text)
 
 	formList.SetTable("activity_set_question").SetTitle("提問牆").SetDescription("提問牆管理")
 	// 提問牆基礎設置新增函式
@@ -150,7 +152,7 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 			_, err := models.DefaultQuestionModel().SetTx(tx).SetConn(s.conn).AddQuestion(
 				values.Get("activity_id"), values.Get("message_check"),
 				values.Get("anonymous"), values.Get("hide_answered"),
-				values.Get("qrcode"))
+				values.Get("qrcode"), values.Get("background"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil
@@ -175,7 +177,7 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := questionModel.SetTx(tx).UpdateQuestion(values.Get("activity_id"), values.Get("message_check"),
 				values.Get("anonymous"), values.Get("hide_answered"),
-				values.Get("qrcode"))
+				values.Get("qrcode"), values.Get("background"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil

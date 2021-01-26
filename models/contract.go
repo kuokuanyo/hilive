@@ -3,7 +3,6 @@ package models
 import (
 	dbsql "database/sql"
 	"errors"
-	"fmt"
 	"hilive/modules/db"
 	"hilive/modules/db/sql"
 	"strconv"
@@ -23,10 +22,9 @@ type ContractModel struct {
 	DeviceDirection        string `json:"device_direction"`
 	MobileBackground       string `json:"MobileBackground"`
 	CreateTime             string `json:"create_time"`
-	ContractOrder          int    `json:"contract_order"`
 }
 
-// DefaultContractModel 預設HoldScreenModel
+// DefaultContractModel 預設ContractModel
 func DefaultContractModel() ContractModel {
 	return ContractModel{Base: Base{TableName: "activity_set_contract"}}
 }
@@ -51,18 +49,11 @@ func (m ContractModel) SetTx(tx *dbsql.Tx) ContractModel {
 
 // AddContract 增加合約牆資料
 func (m ContractModel) AddContract(activityid, title, contractBack, animation, area,
-	mobile, direction, mobileback, create string, order int) (ContractModel, error) {
+	mobile, direction, mobileback string) (ContractModel, error) {
 	// 檢查是否有該活動
 	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
-	}
-
-	// 判斷order設置
-	res, _ := m.SetTx(m.Base.Tx).Table("activity_set_contract").Where("activity_id", "=", activityid).All()
-	count := len(res)
-	if order > count+1 {
-		return m, fmt.Errorf("該活動目前總共設置%d筆的活動資料，如要新增活動資料，活動排序欄位請設置%d以下(包含)的數值", count, count+1)
 	}
 
 	id, err := m.SetTx(m.Base.Tx).Table(m.TableName).Insert(sql.Value{
@@ -74,8 +65,6 @@ func (m ContractModel) AddContract(activityid, title, contractBack, animation, a
 		"mobile_device":            mobile,
 		"device_direction":         direction,
 		"mobile_background":        mobileback,
-		"create_time":              create,
-		"contract_order":           order,
 	})
 
 	m.ID = id
@@ -87,24 +76,15 @@ func (m ContractModel) AddContract(activityid, title, contractBack, animation, a
 	m.MobileDevice = mobile
 	m.DeviceDirection = direction
 	m.MobileBackground = mobileback
-	m.CreateTime = create
-	m.ContractOrder = order
 	return m, err
 }
 
 // UpdateContract 更新簽約牆資料
 func (m ContractModel) UpdateContract(activityid, title, contractBack, animation, area,
-	mobile, direction, mobileback, create string, order int) (int64, error) {
+	mobile, direction, mobileback string) (int64, error) {
 	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
-	}
-
-	// 判斷order設置
-	res, _ := m.SetTx(m.Base.Tx).Table("activity_set_contract").Where("activity_id", "=", activityid).All()
-	count := len(res)
-	if order > count {
-		return 0, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要更新簽約牆設置，簽約牆排序欄位請設置%d以下(包含)的數值", count, count)
 	}
 
 	fieldValues := sql.Value{
@@ -116,25 +96,8 @@ func (m ContractModel) UpdateContract(activityid, title, contractBack, animation
 		"mobile_device":            mobile,
 		"device_direction":         direction,
 		"mobile_background":        mobileback,
-		"create_time":              create,
-		"contract_order":           order,
 	}
 
 	return m.SetTx(m.Tx).Table(m.Base.TableName).
 		Where("id", "=", m.ID).Update(fieldValues)
-}
-
-// IsOrderExist 檢查是否已經存在該簽約牆排序
-func (m ContractModel) IsOrderExist(order int, activityid, id string) bool {
-	if id == "" {
-		check, _ := m.Table(m.TableName).Where("contract_order", "=", order).
-			Where("activity_id", "=", activityid).First()
-		return check != nil
-	}
-	check, _ := m.Table(m.TableName).
-		Where("contract_order", "=", order).
-		Where("activity_id", "=", activityid).
-		Where("id", "!=", id).
-		First()
-	return check != nil
 }

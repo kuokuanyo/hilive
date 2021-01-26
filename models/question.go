@@ -44,7 +44,7 @@ func (q QuestionModel) SetTx(tx *dbsql.Tx) QuestionModel {
 }
 
 // AddQuestion 增加提問牆資料
-func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode string) (QuestionModel, error) {
+func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode, background string) (QuestionModel, error) {
 	// 檢查是否有該活動
 	_, err := q.SetTx(q.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
@@ -57,6 +57,7 @@ func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode 
 		"anonymous":     anonymous,
 		"hide_answered": answer,
 		"qrcode":        qrcode,
+		"background":    background,
 	})
 
 	q.ID = id
@@ -70,7 +71,7 @@ func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode 
 }
 
 // UpdateQuestion 更新提問牆資料
-func (q QuestionModel) UpdateQuestion(activityid, check, anonymous, answer, qrcode string) (int64, error) {
+func (q QuestionModel) UpdateQuestion(activityid, check, anonymous, answer, qrcode, background string) (int64, error) {
 	_, err := q.SetTx(q.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
@@ -82,6 +83,7 @@ func (q QuestionModel) UpdateQuestion(activityid, check, anonymous, answer, qrco
 		"anonymous":     anonymous,
 		"hide_answered": answer,
 		"qrcode":        qrcode,
+		"background":    background,
 	}
 
 	return q.SetTx(q.Tx).Table(q.Base.TableName).

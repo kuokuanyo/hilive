@@ -58,8 +58,7 @@ func (s *SystemTable) GetContractPanel(ctx *context.Context) (contractTable Tabl
 			return "豎屏"
 		})
 	info.AddField("移動端背景圖片", "mobile_background", db.Varchar)
-	info.AddField("簽約牆建立時間", "create_time", db.Datetime)
-	info.AddField("簽約牆排序", "contract_order", db.Int)
+	info.AddField("建立時間", "create_time", db.Varchar)
 
 	info.SetTable("activity_set_contract").SetTitle("簽約牆").SetDescription("簽約牆管理").
 		SetDeleteFunc(func(idArr []string) error {
@@ -82,7 +81,7 @@ func (s *SystemTable) GetContractPanel(ctx *context.Context) (contractTable Tabl
 	formList := contractTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
-	formList.AddField("簽約牆標題", "contract_title", db.Varchar, form.Text)
+	formList.AddField("簽約牆標題", "contract_title", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("大屏幕背景圖片", "contract_background", db.Varchar, form.Text)
 	formList.AddField("簽名動畫區域大小", "signature_animation_size", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
@@ -147,29 +146,20 @@ func (s *SystemTable) GetContractPanel(ctx *context.Context) (contractTable Tabl
 			return status
 		}).SetFieldDefault("0")
 	formList.AddField("移動端背景圖片", "mobile_background", db.Varchar, form.Text)
-	formList.AddField("簽約牆建立時間", "create_time", db.Datetime, form.Datetime).SetFieldMust()
-	formList.AddField("簽約牆排序", "contract_order", db.Int, form.Text).
-		SetFieldHelpMsg(template.HTML("請輸入數字設置簽約牆的排序")).SetFieldMust()
 
 	formList.SetTable("activity_set_contract").SetTitle("簽約牆").SetDescription("簽約牆管理")
 
 	formList.SetInsertFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "contract_title", "signature_animation_size", "signature_area_size",
-			"mobile_device", "device_direction", "create_time", "contract_order") {
-			return errors.New("活動ID、標題、設置、時間、排序等欄位都不能為空")
-		}
-
-		order, _ := strconv.Atoi(values.Get("contract_order"))
-		if models.DefaultContractModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
-			return errors.New("已在該排序中建立簽約牆，請設置其他排序")
+			"mobile_device", "device_direction") {
+			return errors.New("活動ID、標題、設置等欄位都不能為空")
 		}
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := models.DefaultContractModel().SetTx(tx).SetConn(s.conn).AddContract(
 				values.Get("activity_id"), values.Get("contract_title"), values.Get("contract_background"),
 				values.Get("signature_animation_size"), values.Get("signature_area_size"),
-				values.Get("mobile_device"), values.Get("device_direction"), values.Get("mobile_background"),
-				values.Get("create_time"), order)
+				values.Get("mobile_device"), values.Get("device_direction"), values.Get("mobile_background"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil
@@ -182,21 +172,15 @@ func (s *SystemTable) GetContractPanel(ctx *context.Context) (contractTable Tabl
 
 	formList.SetUpdateFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "contract_title", "signature_animation_size", "signature_area_size",
-			"mobile_device", "device_direction", "create_time", "contract_order") {
-			return errors.New("活動ID、標題、設置、時間、排序等欄位都不能為空")
-		}
-
-		order, _ := strconv.Atoi(values.Get("contract_order"))
-		if models.DefaultContractModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
-			return errors.New("已在該排序中建立簽約牆，請設置其他排序")
+			"mobile_device", "device_direction") {
+			return errors.New("活動ID、標題、設置等欄位都不能為空")
 		}
 
 		model := models.GetContractModelAndID("activity_set_contract", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := model.SetTx(tx).UpdateContract(values.Get("activity_id"), values.Get("contract_title"), values.Get("contract_background"),
 				values.Get("signature_animation_size"), values.Get("signature_area_size"),
-				values.Get("mobile_device"), values.Get("device_direction"), values.Get("mobile_background"),
-				values.Get("create_time"), order)
+				values.Get("mobile_device"), values.Get("device_direction"), values.Get("mobile_background"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil

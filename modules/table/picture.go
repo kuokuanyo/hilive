@@ -49,6 +49,7 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 			}
 			return res
 		})
+	info.AddField("屏幕背景", "background", db.Varchar)
 
 	info.SetTable("activity_set_picture").SetTitle("圖片牆").SetDescription("圖片管理").
 		SetDeleteFunc(func(idArr []string) error {
@@ -91,6 +92,7 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 		}).SetFieldDefault("1")
 	formList.AddField("圖片路徑", "picture_path", db.Varchar, form.TextArea).
 		SetFieldHelpMsg(template.HTML("請一行設置一個圖片路徑，若要輸入新路徑請換行輸入"))
+	formList.AddField("屏幕背景", "background", db.Varchar, form.Text)
 
 	formList.SetTable("activity_set_picture").SetTitle("圖片牆").SetDescription("圖片管理")
 
@@ -116,7 +118,7 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 			_, err := models.DefaultPictureModel().SetTx(tx).SetConn(s.conn).AddPicture(
 				values.Get("activity_id"), values.Get("start_time"),
 				values.Get("end_time"), second, values.Get("play_order"),
-				values.Get("picture_path"))
+				values.Get("picture_path"), values.Get("background"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil
@@ -149,7 +151,7 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := model.SetTx(tx).UpdatePicture(values.Get("activity_id"), values.Get("start_time"),
 				values.Get("end_time"), second, values.Get("play_order"),
-				values.Get("picture_path"))
+				values.Get("picture_path"), values.Get("background"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil

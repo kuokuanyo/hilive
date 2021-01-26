@@ -46,7 +46,7 @@ func (m PictureModel) SetTx(tx *dbsql.Tx) PictureModel {
 }
 
 // AddPicture 增加圖片牆資料
-func (m PictureModel) AddPicture(activityid, start, end string, second int, order, path string) (PictureModel, error) {
+func (m PictureModel) AddPicture(activityid, start, end string, second int, order, path, background string) (PictureModel, error) {
 	// 檢查是否有該活動
 	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
@@ -60,6 +60,7 @@ func (m PictureModel) AddPicture(activityid, start, end string, second int, orde
 		"switch_second": second,
 		"play_order":    order,
 		"picture_path":  path,
+		"background":    background,
 	})
 
 	m.ID = id
@@ -73,7 +74,7 @@ func (m PictureModel) AddPicture(activityid, start, end string, second int, orde
 }
 
 // UpdatePicture 更新圖片牆資料
-func (m PictureModel) UpdatePicture(activityid, start, end string, second int, order, path string) (int64, error) {
+func (m PictureModel) UpdatePicture(activityid, start, end string, second int, order, path, background string) (int64, error) {
 	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
@@ -86,6 +87,7 @@ func (m PictureModel) UpdatePicture(activityid, start, end string, second int, o
 		"switch_second": second,
 		"play_order":    order,
 		"picture_path":  path,
+		"background":    background,
 	}
 
 	return m.SetTx(m.Tx).Table(m.Base.TableName).
