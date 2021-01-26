@@ -1097,6 +1097,13 @@ var TemplateList = map[string]string{"head": `{{define "head"}}
 														<input {{if $data.Must}}required="1"{{end}} type="text" name="{{$data.Field}}" value='{{$data.Value}}'
 															class="form-control {{$data.Field}}" placeholder="{{$data.Placeholder}}">
 													</div>
+												{{else}}
+													<div class="box box-solid box-default no-margin">
+													<div class="box-body" style="min-height: 40px;">
+														{{$data.Value}}
+													</div>
+													</div>
+													<input type="hidden" class="{{$data.Field}}" name="{{$data.Field}}" value='{{$data.Value}}'>
 												{{end}}
 											{{else if eq $data.FormType.String "select"}}
 												<select class="form-control {{.Field}} select2-hidden-accessible" style="width: 100%;" name="{{.Field}}[]"

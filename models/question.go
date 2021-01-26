@@ -72,13 +72,15 @@ func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode,
 
 // UpdateQuestion 更新提問牆資料
 func (q QuestionModel) UpdateQuestion(activityid, check, anonymous, answer, qrcode, background string) (int64, error) {
-	_, err := q.SetTx(q.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := q.SetTx(q.Base.Tx).Table(q.Base.TableName).Where("id", "=", q.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"activity_id":   activityid,
 		"message_check": check,
 		"anonymous":     anonymous,
 		"hide_answered": answer,

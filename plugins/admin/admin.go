@@ -62,6 +62,7 @@ func (admin *Admin) InitPlugin(services service.List) {
 		"sign":               st.GetSignPanel,
 		"3Dsign":             st.Get3DSignPanel,
 		"countdown":          st.GetCountdownPanel,
+		"gamelottery":        st.GetGameLottery,
 	})
 
 	// 設置Config

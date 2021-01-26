@@ -76,19 +76,18 @@ func (s ApplysignModel) AddApplysign(userid, activityid, username, avater string
 
 // UpdateActivityApplysign 更新報名簽到資料
 func (s ApplysignModel) UpdateActivityApplysign(userid, activityid, username, avater string, status int) (int64, error) {
-	_, err := s.SetTx(s.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := s.SetTx(s.Base.Tx).Table(s.Base.TableName).Where("id", "=", s.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
 	}
-	// 檢查是否有該用戶
-	_, err = s.SetTx(s.Base.Tx).Table("users").Select("id").Where("userid", "=", userid).First()
-	if err != nil {
-		return 0, errors.New("查詢不到該用戶ID，請輸入正確用戶ID")
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+	}
+	if model["user_id"] != userid {
+		return 0, errors.New("資料中的使用者ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"user_id":     userid,
-		"activity_id": activityid,
 		"user_name":   username,
 		"user_avater": avater,
 		"status":      status,

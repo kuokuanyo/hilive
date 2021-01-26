@@ -72,7 +72,8 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 	// 增加表單資訊欄位
 	formList := overviewTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("遊戲名稱", "game_id", db.Varchar, form.SelectSingle).SetFieldMust().
 		SetFieldOptionFromTable("activity_game", "game_name", "id").
 		SetDisplayFunc(func(model types.FieldModel) interface{} {

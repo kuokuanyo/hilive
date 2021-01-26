@@ -80,7 +80,8 @@ func (s *SystemTable) GetContractPanel(ctx *context.Context) (contractTable Tabl
 	// 增加表單資訊欄位
 	formList := contractTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("簽約牆標題", "contract_title", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("大屏幕背景圖片", "contract_background", db.Varchar, form.Text)
 	formList.AddField("簽名動畫區域大小", "signature_animation_size", db.Int, form.Radio).

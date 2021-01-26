@@ -62,13 +62,15 @@ func (t TopicModel) AddTopic(activityid, background string) (TopicModel, error) 
 
 // UpdateTopic 更新主題牆資料
 func (t TopicModel) UpdateTopic(activityid, background string) (int64, error) {
-	_, err := t.SetTx(t.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := t.SetTx(t.Base.Tx).Table(t.Base.TableName).Where("id", "=", t.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"activity_id": activityid,
 		"background":  background,
 	}
 

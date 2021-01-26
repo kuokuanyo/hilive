@@ -55,7 +55,8 @@ func (s *SystemTable) GetSuperdmPanel(ctx *context.Context) (superdmTable Table)
 	// 增加表單資訊欄位
 	formList := superdmTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("超級彈幕訊息審核", "message_check", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Text: "開啟", Value: "1"},
@@ -111,9 +112,6 @@ func (s *SystemTable) GetSuperdmPanel(ctx *context.Context) (superdmTable Table)
 		if values.IsEmpty("activity_id", "message_check", "eye_catching_price",
 			"large_danmu_price", "status_update_price", "picture_danmu_price") {
 			return errors.New("活動ID、審核、價格等欄位都不能為空")
-		}
-		if models.DefaultSuperdmModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("此活動已建立超級彈幕基礎設置")
 		}
 
 		eye, _ := strconv.Atoi(values.Get("eye_catching_price"))

@@ -44,7 +44,7 @@ func (i IntroduceModel) SetTx(tx *dbsql.Tx) IntroduceModel {
 }
 
 // AddActivityIntroduce 增加活動介紹資料
-func (i IntroduceModel) AddActivityIntroduce(activityid, title, content string, order int) (IntroduceModel, error) {
+func (i IntroduceModel) AddActivityIntroduce(activityid, title, content string) (IntroduceModel, error) {
 	// 檢查是否有該活動
 	_, err := i.SetTx(i.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
@@ -54,48 +54,53 @@ func (i IntroduceModel) AddActivityIntroduce(activityid, title, content string, 
 	// 判斷order設置
 	res, _ := i.SetTx(i.Base.Tx).Table("activity_introduce").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if order > count+1 {
-		return i, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要新增活動介紹，活動排序欄位請設置%d以下(包含)的數值", count, count+1)
-	}
 
 	id, err := i.SetTx(i.Base.Tx).Table(i.TableName).Insert(sql.Value{
 		"activity_id":       activityid,
 		"introduce_title":   title,
 		"introduce_content": content,
-		"introduce_order":   order,
+		"introduce_order":   count + 1,
 	})
 
 	i.ID = id
 	i.ActivityID = activityid
 	i.IntroduceTitle = title
 	i.IntroduceContent = content
+	i.IntroduceOrder = count + 1
 	return i, err
 }
 
 // UpdateActivityIntroduce 更新活動介紹資料
 func (i IntroduceModel) UpdateActivityIntroduce(activityid, title, content string, order int) (int64, error) {
-	_, err := i.SetTx(i.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := i.SetTx(i.Base.Tx).Table(i.Base.TableName).Where("id", "=", i.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
-	// 判斷order設置
-	model, _ := i.SetTx(i.Base.Tx).Table("activity_introduce").Where("id", "=", i.ID).First()
-
-	res, _ := i.SetTx(i.Base.Tx).Table("activity_introduce").Where("activity_id", "=", activityid).All()
+	res, _ := i.SetTx(i.Base.Tx).Table(i.Base.TableName).Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if fmt.Sprintf("%v", model["activity_id"]) == activityid {
-		if order > count {
-			return 0, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要更新活動介紹，介紹排序欄位請設置%d以下(包含)的數值", count, count)
-		}
-	} else {
-		if order > count+1 {
-			return 0, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要更新活動介紹，介紹排序欄位請設置%d以下(包含)的數值", count, count+1)
+	if order > count {
+		return 0, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要更新活動介紹，介紹排序欄位請設置%d以下(包含)的數值", count, count)
+	}
+
+	// 還沒更新前的order
+	originalOrder := model["introduce_order"]
+	if fmt.Sprintf("%v", originalOrder) != strconv.Itoa(order) {
+		_, err = i.SetTx(i.Tx).Table(i.Base.TableName).
+			Where("activity_id", "=", activityid).Where("introduce_order", "=", order).Update(sql.Value{
+			"introduce_order": originalOrder,
+		})
+		if err != nil {
+			if err.Error() != "沒有影響任何資料" {
+				return 0, errors.New("更新活動介紹order欄位發生錯誤")
+			}
 		}
 	}
 
 	fieldValues := sql.Value{
-		"activity_id":       activityid,
 		"introduce_title":   title,
 		"introduce_content": content,
 		"introduce_order":   order,
@@ -103,19 +108,4 @@ func (i IntroduceModel) UpdateActivityIntroduce(activityid, title, content strin
 
 	return i.SetTx(i.Tx).Table(i.Base.TableName).
 		Where("id", "=", i.ID).Update(fieldValues)
-}
-
-// IsOrderExist 檢查是否已經存在該介紹排序
-func (i IntroduceModel) IsOrderExist(order int, activityid, id string) bool {
-	if id == "" {
-		check, _ := i.Table(i.TableName).Where("introduce_order", "=", order).
-			Where("activity_id", "=", activityid).First()
-		return check != nil
-	}
-	check, _ := i.Table(i.TableName).
-		Where("introduce_order", "=", order).
-		Where("activity_id", "=", activityid).
-		Where("id", "!=", id).
-		First()
-	return check != nil
 }

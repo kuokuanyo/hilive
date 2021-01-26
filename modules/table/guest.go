@@ -49,31 +49,28 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 	// 增加表單資訊欄位
 	formList := guestTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("嘉賓照片", "guest_picture", db.Varchar, form.Text)
 	formList.AddField("嘉賓名稱", "guest_name", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("嘉賓簡介", "guest_introduce", db.Varchar, form.Text)
 	formList.AddField("嘉賓詳情", "guest_detail", db.Varchar, form.Text)
 	formList.AddField("嘉賓排序", "guest_order", db.Int, form.Text).SetFieldMust().
-		SetFieldHelpMsg(template.HTML("請輸入數字設置活動嘉賓的排序"))
+		SetFieldHelpMsg(template.HTML("請輸入數字設置活動嘉賓的排序")).FieldNotAllowAdd()
 
 	formList.SetTable("activity_guest").SetTitle("活動嘉賓").SetDescription("活動嘉賓管理")
+
 	// 設置嘉賓新增函式
 	formList.SetInsertFunc(func(values form2.Values) error {
-		if values.IsEmpty("activity_id", "guest_name", "guest_order") {
+		if values.IsEmpty("activity_id", "guest_name") {
 			return errors.New("活動ID、嘉賓名稱、排序等欄位都不能為空")
-		}
-
-		order, _ := strconv.Atoi(values.Get("guest_order"))
-		if models.DefaultGuestModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
-			return errors.New("活動已在該排序中建立活動嘉賓，請設置其他排序")
 		}
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增嘉賓資料
 			_, err := models.DefaultGuestModel().SetTx(tx).SetConn(s.conn).AddActivityGuest(
 				values.Get("activity_id"), values.Get("guest_picture"), values.Get("guest_name"),
-				values.Get("guest_introduce"), values.Get("guest_detail"), order)
+				values.Get("guest_introduce"), values.Get("guest_detail"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil
@@ -91,9 +88,6 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 		}
 
 		order, _ := strconv.Atoi(values.Get("guest_order"))
-		if models.DefaultGuestModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
-			return errors.New("活動已在該排序中建立活動嘉賓，請設置其他排序")
-		}
 
 		guestModel := models.GetGuestModelAndID("activity_guest", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {

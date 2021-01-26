@@ -126,14 +126,16 @@ func (f *FormPanel) FieldWithValue(pk, id string, columns []string, res map[stri
 	)
 	// 取得值將值更新至FormField
 	for _, field := range f.FieldList {
-		// 取得欄位的值
-		dataValue := field.GetDataValue(columns, res[field.Field])
-		// 將取得的欄位值放入FormField中
-		list = append(list, *(field.UpdateValue(id, dataValue, res, sql(services))))
-		// 判斷是否有主鍵
-		if field.Field == pk {
-			hasPk = true
-		}
+		// if field.Editable {
+			// 取得欄位的值
+			dataValue := field.GetDataValue(columns, res[field.Field])
+			// 將取得的欄位值放入FormField中
+			list = append(list, *(field.UpdateValue(id, dataValue, res, sql(services))))
+			// 判斷是否有主鍵
+			if field.Field == pk {
+				hasPk = true
+			}
+		// }
 	}
 
 	if !hasPk {

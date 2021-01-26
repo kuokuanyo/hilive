@@ -63,15 +63,17 @@ func (o OverviewModel) AddActivityOverview(activityid, game, open string) (Overv
 
 // UpdateActivityOverview 更新活動總覽資料
 func (o OverviewModel) UpdateActivityOverview(activityid, game, open string) (int64, error) {
-	_, err := o.SetTx(o.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := o.SetTx(o.Base.Tx).Table(o.Base.TableName).Select("activity_id").Where("id", "=", o.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"activity_id": activityid,
-		"game_id":     game,
-		"open":        open,
+		"game_id": game,
+		"open":    open,
 	}
 
 	return o.SetTx(o.Tx).Table(o.Base.TableName).

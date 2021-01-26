@@ -59,7 +59,8 @@ func (s *SystemTable) GetCountdownPanel(ctx *context.Context) (countdowntable Ta
 	// 增加表單資訊欄位
 	formList := countdowntable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("倒數計時秒數", "second", db.Int, form.Number).SetFieldMust().SetFieldDefault("5")
 	formList.AddField("倒數計時後進入頁面", "index_url", db.Tinyint, form.Radio).
 		SetFieldOptions(types.FieldOptions{
@@ -121,10 +122,6 @@ func (s *SystemTable) GetCountdownPanel(ctx *context.Context) (countdowntable Ta
 	formList.SetUpdateFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "second", "index_url", "avatar_shape") {
 			return errors.New("活動ID、秒數、頭像形狀、導向頁面等欄位都不能為空")
-		}
-
-		if models.DefaultCountdownModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過倒數計時的基礎設定")
 		}
 
 		second, _ := strconv.Atoi(values.Get("second"))

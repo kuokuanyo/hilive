@@ -24,12 +24,12 @@ func (s *SystemTable) GetSignPanel(ctx *context.Context) (signTable Table) {
 	info.AddField("ID", "id", "INT").FieldSortable()
 	info.AddField("活動專屬ID", "activity_id", db.Varchar).FieldFilterable()
 	info.AddField("是否顯示簽到人數", "display", db.Tinyint).
-	SetDisplayFunc(func(value types.FieldModel) interface{} {
-		if value.Value == "1" {
-			return "開啟"
-		}
-		return "關閉"
-	})
+		SetDisplayFunc(func(value types.FieldModel) interface{} {
+			if value.Value == "1" {
+				return "開啟"
+			}
+			return "關閉"
+		})
 	info.AddField("簽到牆背景", "background", db.Varchar)
 
 	info.SetTable("activity_set_sign").SetTitle("簽到牆").SetDescription("簽到牆管理").
@@ -52,7 +52,8 @@ func (s *SystemTable) GetSignPanel(ctx *context.Context) (signTable Table) {
 	// 增加表單資訊欄位
 	formList := signTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("是否顯示簽到人數", "display", db.Tinyint, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "開啟"},
@@ -97,10 +98,6 @@ func (s *SystemTable) GetSignPanel(ctx *context.Context) (signTable Table) {
 	formList.SetUpdateFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "display") {
 			return errors.New("活動ID、顯示人數等欄位都不能為空")
-		}
-
-		if models.DefaultSignModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過簽到牆的基礎設定")
 		}
 
 		model := models.GetSignModelAndID("activity_set_sign", values.Get("id")).SetConn(s.conn)

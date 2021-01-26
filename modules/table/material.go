@@ -48,31 +48,26 @@ func (s *SystemTable) GetMaterialPanel(ctx *context.Context) (materialTable Tabl
 	// 增加表單欄位資訊
 	formList := materialTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).
+		SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("資料名稱", "data_name", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("資料說明", "data_introduce", db.Varchar, form.Text)
 	formList.AddField("資料連結", "data_link", db.Varchar, form.Text)
 	formList.AddField("資料排序", "data_order", db.Int, form.Text).
-		SetFieldHelpMsg(template.HTML("請輸入數字設置活動資料的排序")).SetFieldMust()
+		SetFieldHelpMsg(template.HTML("請輸入數字設置活動資料的排序")).SetFieldMust().FieldNotAllowAdd()
 
 	formList.SetTable("activity_material").SetTitle("活動資料").SetDescription("活動資料管理")
 
 	// 設置資料新增函式
 	formList.SetInsertFunc(func(values form2.Values) error {
-		if values.IsEmpty("activity_id", "data_name", "data_order") {
+		if values.IsEmpty("activity_id", "data_name") {
 			return errors.New("活動ID、資料名稱、排序等欄位都不能為空")
 		}
 
-		order, _ := strconv.Atoi(values.Get("data_order"))
-		if models.DefaultMaterialModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
-			return errors.New("活動已在該排序中建立活動資料，請設置其他排序")
-		}
-
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			// 新增嘉賓資料
 			_, err := models.DefaultMaterialModel().SetTx(tx).SetConn(s.conn).AddActivityMaterial(
 				values.Get("activity_id"), values.Get("data_name"), values.Get("data_introduce"),
-				values.Get("data_link"), order)
+				values.Get("data_link"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil
@@ -90,10 +85,6 @@ func (s *SystemTable) GetMaterialPanel(ctx *context.Context) (materialTable Tabl
 		}
 
 		order, _ := strconv.Atoi(values.Get("data_order"))
-		if models.DefaultMaterialModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
-			return errors.New("活動已在該排序中建立活動資料，請設置其他排序")
-		}
-
 		materialModel := models.GetMaterialModelAndID("activity_material", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料

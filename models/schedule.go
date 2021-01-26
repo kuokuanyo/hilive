@@ -70,13 +70,15 @@ func (s ScheduleModel) AddActivitySchedule(activityid, name, content, start, end
 
 // UpdateActivitySchedule 更新活動行程資料
 func (s ScheduleModel) UpdateActivitySchedule(activityid, name, content, start, end string) (int64, error) {
-	_, err := s.SetTx(s.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := s.SetTx(s.Base.Tx).Table(s.Base.TableName).Where("id", "=", s.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"activity_id":      activityid,
 		"schedule_name":    name,
 		"schedule_content": content,
 		"start_time":       start,

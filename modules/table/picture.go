@@ -71,7 +71,8 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 	// 增加表單資訊欄位
 	formList := pictureTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("活動開始時間", "start_time", db.Datetime, form.Datetime).SetFieldMust()
 	formList.AddField("活動結束時間", "end_time", db.Datetime, form.Datetime).SetFieldMust()
 	formList.AddField("屏幕間隔秒數", "switch_second", db.Int, form.Number).SetFieldMust().SetFieldDefault("5")
@@ -132,10 +133,6 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 	formList.SetUpdateFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "start_time", "end_time", "switch_second", "play_order") {
 			return errors.New("活動ID、時間、秒數等欄位都不能為空")
-		}
-
-		if models.DefaultPictureModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過圖片牆的基礎設定")
 		}
 
 		// 時間判斷

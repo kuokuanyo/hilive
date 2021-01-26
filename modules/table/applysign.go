@@ -56,8 +56,10 @@ func (s *SystemTable) GetApplysignPanel(ctx *context.Context) (applysignTable Ta
 		// 增加表單欄位資訊
 	formList := applysignTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("使用者ID", "user_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("使用者辨別ID")).SetFieldMust()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("使用者ID", "user_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("使用者辨別ID")).SetFieldMust().FieldNotAllowEdit()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("使用者名稱", "user_name", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("使用者頭像", "user_avater", db.Varchar, form.Text)
 	formList.AddField("簽到狀態", "status", db.Int, form.Radio).
@@ -77,19 +79,18 @@ func (s *SystemTable) GetApplysignPanel(ctx *context.Context) (applysignTable Ta
 		}).SetFieldDefault("1")
 
 	formList.SetTable("activity_applysign").SetTitle("報名簽到").SetDescription("簽到管理")
-	// 設置報名簽到新增函式
+
 	formList.SetInsertFunc(func(values form2.Values) error {
 		if values.IsEmpty("user_id", "activity_id", "user_name", "status") {
 			return errors.New("活動ID、使用者資訊、簽到狀態等欄位都不能為空")
 		}
 
-		if models.DefaultApplysignModel().SetConn(s.conn).IsSignExist(values.Get("activity_id"), "", values.Get("id")) {
+		if models.DefaultApplysignModel().SetConn(s.conn).IsSignExist(values.Get("activity_id"), values.Get("user_id"), "") {
 			return errors.New("該用戶已報名簽到此活動")
 		}
 
 		status, _ := strconv.Atoi(values.Get("status"))
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			// 新增活動資料
 			_, err := models.DefaultApplysignModel().SetTx(tx).SetConn(s.conn).AddApplysign(
 				values.Get("user_id"), values.Get("activity_id"), values.Get("user_name"),
 				values.Get("user_avater"), status)
@@ -109,14 +110,9 @@ func (s *SystemTable) GetApplysignPanel(ctx *context.Context) (applysignTable Ta
 			return errors.New("活動ID、使用者資訊、簽到狀態等欄位都不能為空")
 		}
 
-		if models.DefaultApplysignModel().SetConn(s.conn).IsSignExist(values.Get("activity_id"), values.Get("user_id"), values.Get("id")) {
-			return errors.New("該用戶已報名簽到此活動")
-		}
-
 		status, _ := strconv.Atoi(values.Get("status"))
 		applyModel := models.GetApplysignModelAndID("activity_applysign", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			// 更新報名簽到資料
 			_, err := applyModel.SetTx(tx).UpdateActivityApplysign(values.Get("user_id"),
 				values.Get("activity_id"), values.Get("user_name"),
 				values.Get("user_avater"), status)

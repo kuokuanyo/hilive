@@ -95,7 +95,8 @@ func (s *SystemTable) GetHoldScreenPanel(ctx *context.Context) (holdscreenTable 
 	// 增加表單資訊欄位
 	formList := holdscreenTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("霸屏每秒價格", "holdscreen_price", db.Int, form.Number).SetFieldMust().SetFieldDefault("2")
 	formList.AddField("霸屏消息審核", "message_check", db.Tinyint, form.Radio).
 		SetFieldOptions(types.FieldOptions{
@@ -238,10 +239,6 @@ func (s *SystemTable) GetHoldScreenPanel(ctx *context.Context) (holdscreenTable 
 		if values.IsEmpty("activity_id", "holdscreen_price", "message_check", "only_picture", "minimum_second",
 			"birthday_topic", "confess_topic", "propose_topic", "bless_topic", "goddess_topic") {
 			return errors.New("活動ID、秒數、主題等欄位都不能為空")
-		}
-
-		if models.DefaultHoldScreenModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過霸屏的基礎設定")
 		}
 
 		price, _ := strconv.Atoi(values.Get("holdscreen_price"))

@@ -59,7 +59,8 @@ func (s *SystemTable) Get3DSignPanel(ctx *context.Context) (signTable Table) {
 	// 增加表單資訊欄位
 	formList := signTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("頭像形狀", "avatar_shape", db.Tinyint, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Value: "1", Text: "圓形"},
@@ -120,10 +121,6 @@ func (s *SystemTable) Get3DSignPanel(ctx *context.Context) (signTable Table) {
 	formList.SetUpdateFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "display", "avatar_shape") {
 			return errors.New("活動ID、頭像形狀、顯示人數等欄位都不能為空")
-		}
-
-		if models.DefaultSign3DModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過3D簽到牆的基礎設定")
 		}
 
 		model := models.GetSign3DModelAndID("activity_set_3d", values.Get("id")).SetConn(s.conn)

@@ -46,7 +46,7 @@ func (g GuestModel) SetTx(tx *dbsql.Tx) GuestModel {
 }
 
 // AddActivityGuest 增加活動嘉賓資料
-func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detail string, order int) (GuestModel, error) {
+func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detail string) (GuestModel, error) {
 	// 檢查是否有該活動
 	_, err := g.SetTx(g.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
 	if err != nil {
@@ -56,9 +56,6 @@ func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detai
 	// 判斷order設置
 	res, _ := g.SetTx(g.Base.Tx).Table("activity_guest").Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if order > count+1 {
-		return g, fmt.Errorf("該活動目前總共設置%d筆的活動介紹，如要新增活動介紹，活動排序欄位請設置%d以下(包含)的數值", count, count+1)
-	}
 
 	id, err := g.SetTx(g.Base.Tx).Table(g.TableName).Insert(sql.Value{
 		"activity_id":     activityid,
@@ -66,7 +63,7 @@ func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detai
 		"guest_name":      name,
 		"guest_introduce": introduce,
 		"guest_detail":    detail,
-		"guest_order":     order,
+		"guest_order":     count + 1,
 	})
 
 	g.ID = id
@@ -75,56 +72,47 @@ func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detai
 	g.GuestName = name
 	g.GuestIntroduce = introduce
 	g.GuestDetail = detail
-	g.GuestOrder = order
+	g.GuestOrder = count + 1
 	return g, err
 }
 
 // UpdateActivityGuest 更新活動嘉賓資料
 func (g GuestModel) UpdateActivityGuest(activityid, picture, name, introduce, detail string, order int) (int64, error) {
-	_, err := g.SetTx(g.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := g.SetTx(g.Base.Tx).Table(g.Base.TableName).Where("id", "=", g.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
-	// 判斷order設置
-	model, _ := g.SetTx(g.Base.Tx).Table("activity_guest").Where("id", "=", g.ID).First()
-
-	res, _ := g.SetTx(g.Base.Tx).Table("activity_guest").Where("activity_id", "=", activityid).All()
+	res, _ := g.SetTx(g.Base.Tx).Table(g.Base.TableName).Where("activity_id", "=", activityid).All()
 	count := len(res)
-	if fmt.Sprintf("%v", model["activity_id"]) == activityid {
-		if order > count {
-			return 0, fmt.Errorf("該活動目前總共設置%d筆的活動嘉賓，如要更新活動嘉賓，嘉賓排序欄位請設置%d以下(包含)的數值", count, count)
-		}
-	} else {
-		if order > count+1 {
-			return 0, fmt.Errorf("該活動目前總共設置%d筆的活動嘉賓，如要更新活動嘉賓，嘉賓排序欄位請設置%d以下(包含)的數值", count, count+1)
+	if order > count {
+		return 0, fmt.Errorf("該活動目前總共設置%d筆的活動嘉賓，如要更新活動嘉賓，嘉賓排序欄位請設置%d以下(包含)的數值", count, count)
+	}
+
+	// 還沒更新前的order
+	originalOrder := model["guest_order"]
+	if fmt.Sprintf("%v", originalOrder) != strconv.Itoa(order) {
+		_, err = g.SetTx(g.Tx).Table(g.Base.TableName).
+			Where("activity_id", "=", activityid).Where("guest_order", "=", order).Update(sql.Value{
+			"guest_order": originalOrder,
+		})
+		if err != nil {
+			if err.Error() != "沒有影響任何資料" {
+				return 0, errors.New("更新活動嘉賓order欄位發生錯誤")
+			}
 		}
 	}
 
 	fieldValues := sql.Value{
-		"activity_id":     activityid,
 		"guest_picture":   picture,
 		"guest_name":      name,
 		"guest_introduce": introduce,
 		"guest_detail":    detail,
 		"guest_order":     order,
 	}
-
 	return g.SetTx(g.Tx).Table(g.Base.TableName).
 		Where("id", "=", g.ID).Update(fieldValues)
-}
-
-// IsOrderExist 檢查是否已經存在該嘉賓排序
-func (g GuestModel) IsOrderExist(order int, activityid, id string) bool {
-	if id == "" {
-		check, _ := g.Table(g.TableName).Where("guest_order", "=", order).
-			Where("activity_id", "=", activityid).First()
-		return check != nil
-	}
-	check, _ := g.Table(g.TableName).
-		Where("guest_order", "=", order).
-		Where("activity_id", "=", activityid).
-		Where("id", "!=", id).
-		First()
-	return check != nil
 }

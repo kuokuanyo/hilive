@@ -47,28 +47,24 @@ func (s *SystemTable) GetIntroducePanel(ctx *context.Context) (introduceTable Ta
 	// 增加表單欄位資訊
 	formList := introduceTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("介紹標題", "introduce_title", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("介紹內容", "introduce_content", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("介紹排序", "introduce_order", db.Int, form.Text).
-		SetFieldHelpMsg(template.HTML("請輸入數字設置活動介紹的排序")).SetFieldMust()
+		SetFieldHelpMsg(template.HTML("請輸入數字設置活動介紹的排序")).FieldNotAllowAdd()
 
 	formList.SetTable("activity_introduce").SetTitle("活動介紹").SetDescription("活動介紹管理")
 	// 設置活動介紹新增函式
 	formList.SetInsertFunc(func(values form2.Values) error {
-		if values.IsEmpty("activity_id", "introduce_title", "introduce_content", "introduce_order") {
-			return errors.New("活動ID、介紹標題、內容、排序等欄位都不能為空")
-		}
-
-		order, _ := strconv.Atoi(values.Get("introduce_order"))
-		if models.DefaultIntroduceModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), "") {
-			return errors.New("活動已在該排序中建立活動介紹，請設置其他排序")
+		if values.IsEmpty("activity_id", "introduce_title", "introduce_content") {
+			return errors.New("活動ID、介紹標題、內容等欄位都不能為空")
 		}
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增活動資料
 			_, err := models.DefaultIntroduceModel().SetTx(tx).SetConn(s.conn).AddActivityIntroduce(
-				values.Get("activity_id"), values.Get("introduce_title"), values.Get("introduct_content"), order)
+				values.Get("activity_id"), values.Get("introduce_title"), values.Get("introduce_content"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil
@@ -86,10 +82,6 @@ func (s *SystemTable) GetIntroducePanel(ctx *context.Context) (introduceTable Ta
 		}
 
 		order, _ := strconv.Atoi(values.Get("introduce_order"))
-		if models.DefaultIntroduceModel().SetConn(s.conn).IsOrderExist(order, values.Get("activity_id"), values.Get("id")) {
-			return errors.New("活動已在該排序中建立活動介紹，請設置其他排序")
-		}
-
 		introduceModel := models.GetIntroduceModelAndID("activity_introduce", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料

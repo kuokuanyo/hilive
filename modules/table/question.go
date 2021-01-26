@@ -74,7 +74,8 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 	// 增加表單欄位資訊
 	formList := questionTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("提問訊息審核", "message_check", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Text: "開啟", Value: "1"},
@@ -138,7 +139,7 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 	formList.AddField("屏幕背景", "background", db.Varchar, form.Text)
 
 	formList.SetTable("activity_set_question").SetTitle("提問牆").SetDescription("提問牆管理")
-	// 提問牆基礎設置新增函式
+
 	formList.SetInsertFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "message_check", "anonymous", "hide_answered", "qrcode") {
 			return errors.New("活動ID、提問牆資訊、qrcode等欄位都不能為空")
@@ -163,14 +164,9 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 		return txErr
 	})
 
-	// 提問牆基礎設置更新函式
 	formList.SetUpdateFunc(func(values form2.Values) error {
 		if values.IsEmpty("activity_id", "message_check", "anonymous", "hide_answered", "qrcode") {
 			return errors.New("活動ID、提問牆資訊、qrcode等欄位都不能為空")
-		}
-
-		if models.DefaultQuestionModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過提問牆的基礎設定")
 		}
 
 		questionModel := models.GetQuestionModelAndID("activity_set_question", values.Get("id")).SetConn(s.conn)

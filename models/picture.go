@@ -75,13 +75,15 @@ func (m PictureModel) AddPicture(activityid, start, end string, second int, orde
 
 // UpdatePicture 更新圖片牆資料
 func (m PictureModel) UpdatePicture(activityid, start, end string, second int, order, path, background string) (int64, error) {
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"activity_id":   activityid,
 		"start_time":    start,
 		"end_time":      end,
 		"switch_second": second,

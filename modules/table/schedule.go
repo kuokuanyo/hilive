@@ -48,7 +48,8 @@ func (s *SystemTable) GetSchedulePanel(ctx *context.Context) (scheduleTable Tabl
 	// 增加表單資訊
 	formList := scheduleTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldMust().SetFieldHelpMsg(template.HTML("活動辨別ID"))
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldMust().
+	SetFieldHelpMsg(template.HTML("活動辨別ID")).FieldNotAllowEdit()
 	formList.AddField("行程名稱", "schedule_name", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("行程內容", "schedule_content", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("行程開始時間", "start_time", db.Datetime, form.Datetime).SetFieldMust()

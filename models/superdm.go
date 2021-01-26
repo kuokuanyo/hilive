@@ -73,13 +73,15 @@ func (m SuperdmModel) AddSuperdm(activityid, check string, eye, large, statusUpd
 
 // UpdateSuperdm 更新超級彈幕資料
 func (m SuperdmModel) UpdateSuperdm(activityid, check string, eye, large, statusUpdate, picture int) (int64, error) {
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+		return 0, errors.New("查詢不到此活動")
+	}
+	if model["activity_id"] != activityid {
+		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	fieldValues := sql.Value{
-		"activity_id":         activityid,
 		"message_check":       check,
 		"eye_catching_price":  eye,
 		"large_danmu_price":   large,

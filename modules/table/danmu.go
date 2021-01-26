@@ -103,7 +103,8 @@ func (s *SystemTable) GetDanmuPanel(ctx *context.Context) (danmuTable Table) {
 	// 增加表單欄位資訊
 	formList := danmuTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
-	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust()
+	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("彈幕循環", "danmu_loop", db.Int, form.Radio).
 		SetFieldOptions(types.FieldOptions{
 			{Text: "開啟", Value: "1"},
@@ -247,10 +248,6 @@ func (s *SystemTable) GetDanmuPanel(ctx *context.Context) (danmuTable Table) {
 		if values.IsEmpty("activity_id", "danmu_loop", "position", "display_user", "danmu_size",
 			"danmu_speed", "danmu_density", "danmu_opacity") {
 			return errors.New("活動ID、彈幕資訊等欄位都不能為空")
-		}
-
-		if models.DefaultDanmuModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
-			return errors.New("該活動已設置過彈幕的基礎設定")
 		}
 
 		danmuModel := models.GetDanmuModelAndID("activity_set_danmu", values.Get("id")).SetConn(s.conn)
