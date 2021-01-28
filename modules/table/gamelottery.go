@@ -25,7 +25,7 @@ func (s *SystemTable) GetGameLottery(ctx *context.Context) (gametable Table) {
 	info := gametable.GetInfo()
 	info.AddField("ID", "id", "INT").FieldSortable()
 	info.AddField("活動專屬ID", "activity_id", db.Varchar).FieldFilterable()
-	info.AddField("小遊戲專屬ID", "game_id", db.Varchar).FieldFilterable()
+	info.AddField("遊戲專屬ID", "game_id", db.Varchar).FieldFilterable()
 	info.AddField("遊戲標題", "title", db.Varchar)
 	info.AddField("遊戲規則", "rule", db.Varchar)
 	info.AddField("遊戲開始時間", "start_time", db.Datetime)
@@ -77,8 +77,8 @@ func (s *SystemTable) GetGameLottery(ctx *context.Context) (gametable Table) {
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
 		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
-	formList.AddField("小遊戲專屬ID", "game_id", db.Varchar, form.Text).
-		SetFieldHelpMsg(template.HTML("小遊戲辨別ID")).SetFieldMust().FieldNotAllowAdd().FieldNotAllowEdit()
+	formList.AddField("遊戲專屬ID", "game_id", db.Varchar, form.Text).
+		SetFieldHelpMsg(template.HTML("遊戲辨別ID")).SetFieldMust().FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("遊戲標題", "title", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("遊戲規則", "rule", db.Varchar, form.Text).SetFieldMust()
 	formList.AddField("遊戲開始時間", "start_time", db.Datetime, form.Datetime).SetFieldMust()

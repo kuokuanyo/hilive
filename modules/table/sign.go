@@ -100,6 +100,11 @@ func (s *SystemTable) GetSignPanel(ctx *context.Context) (signTable Table) {
 			return errors.New("活動ID、顯示人數等欄位都不能為空")
 		}
 
+		if models.DefaultSignModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過簽到牆的基礎設定")
+		}
+
 		model := models.GetSignModelAndID("activity_set_sign", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := model.SetTx(tx).UpdateSign(values.Get("activity_id"), values.Get("display"), values.Get("background"))

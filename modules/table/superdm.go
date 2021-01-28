@@ -114,6 +114,11 @@ func (s *SystemTable) GetSuperdmPanel(ctx *context.Context) (superdmTable Table)
 			return errors.New("活動ID、審核、價格等欄位都不能為空")
 		}
 
+		if models.DefaultSuperdmModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("此活動已建立超級彈幕基礎設置")
+		}
+
 		eye, _ := strconv.Atoi(values.Get("eye_catching_price"))
 		large, _ := strconv.Atoi(values.Get("large_danmu_price"))
 		statusUpdate, _ := strconv.Atoi(values.Get("status_update_price"))

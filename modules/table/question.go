@@ -169,6 +169,11 @@ func (s *SystemTable) GetQuestionPanel(ctx *context.Context) (questionTable Tabl
 			return errors.New("活動ID、提問牆資訊、qrcode等欄位都不能為空")
 		}
 
+		if models.DefaultQuestionModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過提問牆的基礎設定")
+		}
+
 		questionModel := models.GetQuestionModelAndID("activity_set_question", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := questionModel.SetTx(tx).UpdateQuestion(values.Get("activity_id"), values.Get("message_check"),

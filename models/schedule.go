@@ -43,10 +43,10 @@ func (s ScheduleModel) SetTx(tx *dbsql.Tx) ScheduleModel {
 	return s
 }
 
-// AddActivitySchedule 增加活動行程資料
-func (s ScheduleModel) AddActivitySchedule(activityid, name, content, start, end string) (ScheduleModel, error) {
+// AddSchedule 增加活動行程資料
+func (s ScheduleModel) AddSchedule(activityid, name, content, start, end string) (ScheduleModel, error) {
 	// 檢查是否有該活動
-	_, err := s.SetTx(s.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := s.SetTx(s.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return s, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -68,17 +68,16 @@ func (s ScheduleModel) AddActivitySchedule(activityid, name, content, start, end
 	return s, err
 }
 
-// UpdateActivitySchedule 更新活動行程資料
-func (s ScheduleModel) UpdateActivitySchedule(activityid, name, content, start, end string) (int64, error) {
-	model, err := s.SetTx(s.Base.Tx).Table(s.Base.TableName).Where("id", "=", s.ID).First()
+// UpdateSchedule 更新活動行程資料
+func (s ScheduleModel) UpdateSchedule(activityid, name, content, start, end string) (int64, error) {
+	// 檢查是否有該活動
+	_, err := s.SetTx(s.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":      activityid,
 		"schedule_name":    name,
 		"schedule_content": content,
 		"start_time":       start,

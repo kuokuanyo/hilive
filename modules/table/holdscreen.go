@@ -241,6 +241,11 @@ func (s *SystemTable) GetHoldScreenPanel(ctx *context.Context) (holdscreenTable 
 			return errors.New("活動ID、秒數、主題等欄位都不能為空")
 		}
 
+		if models.DefaultHoldScreenModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過霸屏的基礎設定")
+		}
+
 		price, _ := strconv.Atoi(values.Get("holdscreen_price"))
 		second, _ := strconv.Atoi(values.Get("minimum_second"))
 		model := models.GetHoldScreenModelAndID("activity_set_holdscreen", values.Get("id")).SetConn(s.conn)

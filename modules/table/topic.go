@@ -78,6 +78,10 @@ func (s *SystemTable) GetTopicPanel(ctx *context.Context) (topicTable Table) {
 			return errors.New("活動ID不能為空")
 		}
 
+		if models.DefaultTopicModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過主題牆的基礎設定")
+		}
+
 		topicModel := models.GetTopicModelAndID("activity_set_topic", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := topicModel.SetTx(tx).UpdateTopic(values.Get("activity_id"),

@@ -54,7 +54,7 @@ func (m GameLotteryModel) SetTx(tx *dbsql.Tx) GameLotteryModel {
 func (m GameLotteryModel) AddGameLottery(activityid, gameid, title, rule, start, end, status,
 	open, freq string, winTimes, people, raffle int) (GameLotteryModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -72,6 +72,16 @@ func (m GameLotteryModel) AddGameLottery(activityid, gameid, title, rule, start,
 		"max_people":       people,
 		"raffle_frequency": freq,
 		"raffle_times":     raffle,
+	})
+	if err != nil {
+		return m, err
+	}
+
+	// 將小遊戲資料加入activity_all_game
+	_, err = m.SetTx(m.Base.Tx).Table("activity_all_game").Insert(sql.Value{
+		"activity_id": activityid,
+		"game_id":     gameid,
+		"game":        "幸運轉盤",
 	})
 
 	m.ID = id
@@ -93,18 +103,20 @@ func (m GameLotteryModel) AddGameLottery(activityid, gameid, title, rule, start,
 // UpdateGameLottery 更新幸運轉盤資料
 func (m GameLotteryModel) UpdateGameLottery(activityid, gameid, title, rule, start, end, status,
 	open, freq string, winTimes, people, raffle int) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+	// 檢查是否有該活動遊戲
+	_, err := m.SetTx(m.Base.Tx).Table("activity_all_game").
+	Where("activity_id", "=", activityid).
+	Where("game_id", "=", gameid).
+	First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
-	}
-	if model["game_id"] != gameid {
-		return 0, errors.New("資料中的遊戲ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID及遊戲ID，請輸重新設置")
 	}
 
+
+
 	fieldValues := sql.Value{
+		"activity_id":      activityid,
+		"game_id":          gameid,
 		"title":            title,
 		"rule":             rule,
 		"start_time":       start,

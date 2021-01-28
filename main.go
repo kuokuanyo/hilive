@@ -39,7 +39,6 @@ func main() {
 	// Use 設置Plugin、Admin、Guard、Handler等資訊
 	engine.DefaultEngine().InitDatabase(cfg).Use(r)
 
-	//123123
 	r.Run(":8080")
 	// log.Fatal(http.Serve(autocert.NewListener("hilive.com.tw"), r))
 }

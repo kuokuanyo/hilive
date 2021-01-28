@@ -123,6 +123,11 @@ func (s *SystemTable) Get3DSignPanel(ctx *context.Context) (signTable Table) {
 			return errors.New("活動ID、頭像形狀、顯示人數等欄位都不能為空")
 		}
 
+		if models.DefaultSign3DModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過3D簽到牆的基礎設定")
+		}
+
 		model := models.GetSign3DModelAndID("activity_set_3d", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := model.SetTx(tx).Update3DSign(values.Get("activity_id"), values.Get("avatar_shape"),

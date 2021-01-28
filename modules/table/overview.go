@@ -73,7 +73,7 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 	formList := overviewTable.GetFormPanel()
 	formList.AddField("ID", "id", "INT", form.Default).FieldNotAllowAdd().FieldNotAllowEdit()
 	formList.AddField("活動專屬ID", "activity_id", db.Varchar, form.Text).
-	SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
+		SetFieldHelpMsg(template.HTML("活動辨別ID")).SetFieldMust().FieldNotAllowEdit()
 	formList.AddField("遊戲名稱", "game_id", db.Varchar, form.SelectSingle).SetFieldMust().
 		SetFieldOptionFromTable("activity_game", "game_name", "id").
 		SetDisplayFunc(func(model types.FieldModel) interface{} {
@@ -101,7 +101,7 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 			open = append(open, strconv.FormatInt(openModel["open"].(int64), 10))
 			return open
 		}).SetFieldDefault("1")
-		
+
 	formList.SetTable("activity_game_open").SetTitle("活動總覽").SetDescription("總覽管理")
 	// 設置活動新增函式
 	formList.SetInsertFunc(func(values form2.Values) error {
@@ -109,13 +109,14 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 			return errors.New("活動ID、遊戲名稱、是否開啟等欄位都不能為空")
 		}
 
-		if models.DefaultOverviewModel().SetConn(s.conn).IsGameExist(values.Get("game_id"), values.Get("activity_id"), "") {
+		if models.DefaultOverviewModel().SetConn(s.conn).IsGameExist(values.Get("game_id"),
+			values.Get("activity_id"), "") {
 			return errors.New("此活動已建立該遊戲")
 		}
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增活動資料
-			_, err := models.DefaultOverviewModel().SetTx(tx).SetConn(s.conn).AddActivityOverview(
+			_, err := models.DefaultOverviewModel().SetTx(tx).SetConn(s.conn).AddOverview(
 				values.Get("activity_id"), values.Get("game_id"), values.Get("open"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
@@ -132,14 +133,15 @@ func (s *SystemTable) GetActivityOverviewPanel(ctx *context.Context) (overviewTa
 		if values.IsEmpty("activity_id", "game_id", "open") {
 			return errors.New("活動ID、遊戲名稱、是否開啟等欄位都不能為空")
 		}
-		if models.DefaultOverviewModel().SetConn(s.conn).IsGameExist(values.Get("game_id"), values.Get("activity_id"), values.Get("id")) {
+		if models.DefaultOverviewModel().SetConn(s.conn).IsGameExist(values.Get("game_id"),
+			values.Get("activity_id"), values.Get("id")) {
 			return errors.New("此活動已建立該遊戲")
 		}
 
 		gameModel := models.GetOverviewModelAndID("activity_game_open", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新活動總覽資料
-			_, err := gameModel.SetTx(tx).UpdateActivityOverview(values.Get("activity_id"), values.Get("game_id"), values.Get("open"))
+			_, err := gameModel.SetTx(tx).UpdateOverview(values.Get("activity_id"), values.Get("game_id"), values.Get("open"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
 					return err, nil

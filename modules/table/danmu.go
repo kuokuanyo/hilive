@@ -250,6 +250,11 @@ func (s *SystemTable) GetDanmuPanel(ctx *context.Context) (danmuTable Table) {
 			return errors.New("活動ID、彈幕資訊等欄位都不能為空")
 		}
 
+		if models.DefaultDanmuModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過彈幕的基礎設定")
+		}
+
 		danmuModel := models.GetDanmuModelAndID("activity_set_danmu", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			_, err := danmuModel.SetTx(tx).UpdateDanmu(

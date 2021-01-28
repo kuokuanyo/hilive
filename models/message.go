@@ -48,7 +48,7 @@ func (m MessageModel) SetTx(tx *dbsql.Tx) MessageModel {
 // AddMessage 增加訊息牆資料
 func (m MessageModel) AddMessage(activityid, pictureMessage, auto, prevent, message string, second int) (MessageModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -73,17 +73,16 @@ func (m MessageModel) AddMessage(activityid, pictureMessage, auto, prevent, mess
 	return m, err
 }
 
-// UpdateActivityMessage 更新訊息設置資料
-func (m MessageModel) UpdateActivityMessage(activityid, pictureMessage, auto, prevent, message string, second int) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+// UpdateMessage 更新訊息設置資料
+func (m MessageModel) UpdateMessage(activityid, pictureMessage, auto, prevent, message string, second int) (int64, error) {
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":           activityid,
 		"picture_message":       pictureMessage,
 		"picture_auto":          auto,
 		"refresh_second":        second,

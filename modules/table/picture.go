@@ -135,6 +135,11 @@ func (s *SystemTable) GetPicturePanel(ctx *context.Context) (pictureTable Table)
 			return errors.New("活動ID、時間、秒數等欄位都不能為空")
 		}
 
+		if models.DefaultPictureModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過圖片牆的基礎設定")
+		}
+
 		// 時間判斷
 		start, _ := time.ParseInLocation("2006-01-02 15:04:05", values.Get("start_time"), time.Local)
 		end, _ := time.ParseInLocation("2006-01-02 15:04:05", values.Get("end_time"), time.Local)

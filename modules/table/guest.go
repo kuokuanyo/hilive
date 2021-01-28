@@ -68,7 +68,7 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增嘉賓資料
-			_, err := models.DefaultGuestModel().SetTx(tx).SetConn(s.conn).AddActivityGuest(
+			_, err := models.DefaultGuestModel().SetTx(tx).SetConn(s.conn).AddGuest(
 				values.Get("activity_id"), values.Get("guest_picture"), values.Get("guest_name"),
 				values.Get("guest_introduce"), values.Get("guest_detail"))
 			if err != nil {
@@ -92,7 +92,7 @@ func (s *SystemTable) GetGuestPanel(ctx *context.Context) (guestTable Table) {
 		guestModel := models.GetGuestModelAndID("activity_guest", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料
-			_, err := guestModel.SetTx(tx).UpdateActivityGuest(values.Get("activity_id"), values.Get("guest_picture"), values.Get("guest_name"),
+			_, err := guestModel.SetTx(tx).UpdateGuest(values.Get("activity_id"), values.Get("guest_picture"), values.Get("guest_name"),
 				values.Get("guest_introduce"), values.Get("guest_detail"), order)
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {

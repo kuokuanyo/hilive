@@ -124,6 +124,11 @@ func (s *SystemTable) GetCountdownPanel(ctx *context.Context) (countdowntable Ta
 			return errors.New("活動ID、秒數、頭像形狀、導向頁面等欄位都不能為空")
 		}
 
+		if models.DefaultCountdownModel().SetConn(s.conn).
+		IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過倒數計時的基礎設定")
+		}
+
 		second, _ := strconv.Atoi(values.Get("second"))
 		model := models.GetCountdownModelAndID("activity_set_countdown", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {

@@ -65,7 +65,7 @@ func (s *SystemTable) GetMaterialPanel(ctx *context.Context) (materialTable Tabl
 		}
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			_, err := models.DefaultMaterialModel().SetTx(tx).SetConn(s.conn).AddActivityMaterial(
+			_, err := models.DefaultMaterialModel().SetTx(tx).SetConn(s.conn).AddMaterial(
 				values.Get("activity_id"), values.Get("data_name"), values.Get("data_introduce"),
 				values.Get("data_link"))
 			if err != nil {
@@ -88,7 +88,7 @@ func (s *SystemTable) GetMaterialPanel(ctx *context.Context) (materialTable Tabl
 		materialModel := models.GetMaterialModelAndID("activity_material", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料
-			_, err := materialModel.SetTx(tx).UpdateActivityMaterial(values.Get("activity_id"),
+			_, err := materialModel.SetTx(tx).UpdateMaterial(values.Get("activity_id"),
 				values.Get("data_name"), values.Get("data_introduce"),
 				values.Get("data_link"), order)
 			if err != nil {

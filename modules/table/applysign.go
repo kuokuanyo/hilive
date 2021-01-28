@@ -85,7 +85,8 @@ func (s *SystemTable) GetApplysignPanel(ctx *context.Context) (applysignTable Ta
 			return errors.New("活動ID、使用者資訊、簽到狀態等欄位都不能為空")
 		}
 
-		if models.DefaultApplysignModel().SetConn(s.conn).IsSignExist(values.Get("activity_id"), values.Get("user_id"), "") {
+		if models.DefaultApplysignModel().SetConn(s.conn).
+			IsSignExist(values.Get("activity_id"), values.Get("user_id"), "") {
 			return errors.New("該用戶已報名簽到此活動")
 		}
 
@@ -110,10 +111,15 @@ func (s *SystemTable) GetApplysignPanel(ctx *context.Context) (applysignTable Ta
 			return errors.New("活動ID、使用者資訊、簽到狀態等欄位都不能為空")
 		}
 
+		if models.DefaultApplysignModel().SetConn(s.conn).
+			IsSignExist(values.Get("activity_id"), values.Get("user_id"), values.Get("id")) {
+			return errors.New("該用戶已報名簽到此活動")
+		}
+
 		status, _ := strconv.Atoi(values.Get("status"))
 		applyModel := models.GetApplysignModelAndID("activity_applysign", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			_, err := applyModel.SetTx(tx).UpdateActivityApplysign(values.Get("user_id"),
+			_, err := applyModel.SetTx(tx).UpdateApplysign(values.Get("user_id"),
 				values.Get("activity_id"), values.Get("user_name"),
 				values.Get("user_avater"), status)
 			if err != nil {

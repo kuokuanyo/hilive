@@ -44,7 +44,7 @@ func (m SignModel) SetTx(tx *dbsql.Tx) SignModel {
 // AddSign 增加簽到牆資料
 func (m SignModel) AddSign(activityid, display, background string) (SignModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -64,17 +64,16 @@ func (m SignModel) AddSign(activityid, display, background string) (SignModel, e
 
 // UpdateSign 更新簽到牆資料
 func (m SignModel) UpdateSign(activityid, display, background string) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
-		"display":    display,
-		"background": background,
+		"activity_id": activityid,
+		"display":     display,
+		"background":  background,
 	}
 
 	return m.SetTx(m.Tx).Table(m.Base.TableName).

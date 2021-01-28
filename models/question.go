@@ -46,7 +46,7 @@ func (q QuestionModel) SetTx(tx *dbsql.Tx) QuestionModel {
 // AddQuestion 增加提問牆資料
 func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode, background string) (QuestionModel, error) {
 	// 檢查是否有該活動
-	_, err := q.SetTx(q.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := q.SetTx(q.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return q, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -72,15 +72,14 @@ func (q QuestionModel) AddQuestion(activityid, check, anonymous, answer, qrcode,
 
 // UpdateQuestion 更新提問牆資料
 func (q QuestionModel) UpdateQuestion(activityid, check, anonymous, answer, qrcode, background string) (int64, error) {
-	model, err := q.SetTx(q.Base.Tx).Table(q.Base.TableName).Where("id", "=", q.ID).First()
+	// 檢查是否有該活動
+	_, err := q.SetTx(q.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":   activityid,
 		"message_check": check,
 		"anonymous":     anonymous,
 		"hide_answered": answer,

@@ -49,7 +49,7 @@ func (m DanmuModel) SetTx(tx *dbsql.Tx) DanmuModel {
 // AddDanmu 增加彈幕資料
 func (m DanmuModel) AddDanmu(activityid, loop, position, display, size, speed, density, opacity string) (DanmuModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -79,15 +79,14 @@ func (m DanmuModel) AddDanmu(activityid, loop, position, display, size, speed, d
 
 // UpdateDanmu 更新彈幕資料
 func (m DanmuModel) UpdateDanmu(activityid, loop, position, display, size, speed, density, opacity string) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":   activityid,
 		"danmu_loop":    loop,
 		"position":      position,
 		"display_user":  display,

@@ -43,10 +43,10 @@ func (i IntroduceModel) SetTx(tx *dbsql.Tx) IntroduceModel {
 	return i
 }
 
-// AddActivityIntroduce 增加活動介紹資料
-func (i IntroduceModel) AddActivityIntroduce(activityid, title, content string) (IntroduceModel, error) {
+// AddIntroduce 增加活動介紹資料
+func (i IntroduceModel) AddIntroduce(activityid, title, content string) (IntroduceModel, error) {
 	// 檢查是否有該活動
-	_, err := i.SetTx(i.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := i.SetTx(i.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return i, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -70,16 +70,18 @@ func (i IntroduceModel) AddActivityIntroduce(activityid, title, content string) 
 	return i, err
 }
 
-// UpdateActivityIntroduce 更新活動介紹資料
-func (i IntroduceModel) UpdateActivityIntroduce(activityid, title, content string, order int) (int64, error) {
+// UpdateIntroduce 更新活動介紹資料
+func (i IntroduceModel) UpdateIntroduce(activityid, title, content string, order int) (int64, error) {
+	// 檢查是否有該活動
+	_, err := i.SetTx(i.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
+	if err != nil {
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+	}
+
 	model, err := i.SetTx(i.Base.Tx).Table(i.Base.TableName).Where("id", "=", i.ID).First()
 	if err != nil {
 		return 0, errors.New("查詢不到此活動")
 	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
-	}
-
 	res, _ := i.SetTx(i.Base.Tx).Table(i.Base.TableName).Where("activity_id", "=", activityid).All()
 	count := len(res)
 	if order > count {
@@ -101,6 +103,7 @@ func (i IntroduceModel) UpdateActivityIntroduce(activityid, title, content strin
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":       activityid,
 		"introduce_title":   title,
 		"introduce_content": content,
 		"introduce_order":   order,

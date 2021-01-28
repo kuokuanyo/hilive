@@ -170,9 +170,9 @@ func (s *SystemTable) GetActivityPanel(ctx *context.Context) (activityTable Tabl
 
 	// 設置活動更新函式
 	formList.SetUpdateFunc(func(values form2.Values) error {
-		if values.IsEmpty("activity_name", "activity_type", "expected_participants",
+		if values.IsEmpty("activity_id", "activity_name", "activity_type", "expected_participants",
 			"city", "town", "start_time", "end_time") {
-			return errors.New("活動主題、類型、地點、時間等欄位都不能為空")
+			return errors.New("活動ID、主題、類型、地點、時間等欄位都不能為空")
 		}
 
 		// 時間判斷
@@ -184,7 +184,6 @@ func (s *SystemTable) GetActivityPanel(ctx *context.Context) (activityTable Tabl
 		}
 
 		activity := models.GetActivityModelAndID("activity", values.Get("id")).SetConn(s.conn)
-
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新用戶資料
 			_, err := activity.SetTx(tx).Update(

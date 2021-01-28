@@ -44,10 +44,10 @@ func (m MaterialModel) SetTx(tx *dbsql.Tx) MaterialModel {
 	return m
 }
 
-// AddActivityMaterial 增加活動資料
-func (m MaterialModel) AddActivityMaterial(activityid, name, introduce, link string) (MaterialModel, error) {
+// AddMaterial 增加活動資料
+func (m MaterialModel) AddMaterial(activityid, name, introduce, link string) (MaterialModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -73,16 +73,18 @@ func (m MaterialModel) AddActivityMaterial(activityid, name, introduce, link str
 	return m, err
 }
 
-// UpdateActivityMaterial 更新活動資料
-func (m MaterialModel) UpdateActivityMaterial(activityid, name, introduce, link string, order int) (int64, error) {
+// UpdateMaterial 更新活動資料
+func (m MaterialModel) UpdateMaterial(activityid, name, introduce, link string, order int) (int64, error) {
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
+	if err != nil {
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+	}
+
 	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
 	if err != nil {
 		return 0, errors.New("查詢不到此活動")
 	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
-	}
-
 	res, _ := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("activity_id", "=", activityid).All()
 	count := len(res)
 	if order > count {
@@ -104,6 +106,7 @@ func (m MaterialModel) UpdateActivityMaterial(activityid, name, introduce, link 
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":    activityid,
 		"data_name":      name,
 		"data_introduce": introduce,
 		"data_link":      link,

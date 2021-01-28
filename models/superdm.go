@@ -47,7 +47,7 @@ func (m SuperdmModel) SetTx(tx *dbsql.Tx) SuperdmModel {
 // AddSuperdm 增加超級彈幕資料
 func (m SuperdmModel) AddSuperdm(activityid, check string, eye, large, statusUpdate, picture int) (SuperdmModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -73,15 +73,14 @@ func (m SuperdmModel) AddSuperdm(activityid, check string, eye, large, statusUpd
 
 // UpdateSuperdm 更新超級彈幕資料
 func (m SuperdmModel) UpdateSuperdm(activityid, check string, eye, large, statusUpdate, picture int) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":         activityid,
 		"message_check":       check,
 		"eye_catching_price":  eye,
 		"large_danmu_price":   large,

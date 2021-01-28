@@ -45,10 +45,10 @@ func (g GuestModel) SetTx(tx *dbsql.Tx) GuestModel {
 	return g
 }
 
-// AddActivityGuest 增加活動嘉賓資料
-func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detail string) (GuestModel, error) {
+// AddGuest 增加活動嘉賓資料
+func (g GuestModel) AddGuest(activityid, picture, name, introduce, detail string) (GuestModel, error) {
 	// 檢查是否有該活動
-	_, err := g.SetTx(g.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := g.SetTx(g.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return g, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -76,14 +76,17 @@ func (g GuestModel) AddActivityGuest(activityid, picture, name, introduce, detai
 	return g, err
 }
 
-// UpdateActivityGuest 更新活動嘉賓資料
-func (g GuestModel) UpdateActivityGuest(activityid, picture, name, introduce, detail string, order int) (int64, error) {
+// UpdateGuest 更新活動嘉賓資料
+func (g GuestModel) UpdateGuest(activityid, picture, name, introduce, detail string, order int) (int64, error) {
+	// 檢查是否有該活動
+	_, err := g.SetTx(g.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
+	if err != nil {
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
+	}
+
 	model, err := g.SetTx(g.Base.Tx).Table(g.Base.TableName).Where("id", "=", g.ID).First()
 	if err != nil {
 		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
 	}
 
 	res, _ := g.SetTx(g.Base.Tx).Table(g.Base.TableName).Where("activity_id", "=", activityid).All()
@@ -107,6 +110,7 @@ func (g GuestModel) UpdateActivityGuest(activityid, picture, name, introduce, de
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":     activityid,
 		"guest_picture":   picture,
 		"guest_name":      name,
 		"guest_introduce": introduce,

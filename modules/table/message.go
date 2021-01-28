@@ -62,7 +62,6 @@ func (s *SystemTable) GetMessagePanel(ctx *context.Context) (messageTable Table)
 		})
 
 	info.SetTable("activity_set_message").SetTitle("訊息牆").SetDescription("訊息牆管理").
-		// 刪除函式
 		SetDeleteFunc(func(idArr []string) error {
 			var ids = interfaces(idArr)
 
@@ -146,7 +145,6 @@ func (s *SystemTable) GetMessagePanel(ctx *context.Context) (messageTable Table)
 
 		second, _ := strconv.Atoi(values.Get("refresh_second"))
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			// 新增活動資料
 			_, err := models.DefaultMessageModel().SetTx(tx).SetConn(s.conn).AddMessage(
 				values.Get("activity_id"), values.Get("picture_message"),
 				values.Get("picture_auto"), values.Get("prevent_status_update"),
@@ -166,10 +164,14 @@ func (s *SystemTable) GetMessagePanel(ctx *context.Context) (messageTable Table)
 			return errors.New("活動ID、訊息牆資訊、刷新秒數等欄位都不能為空")
 		}
 
+		if models.DefaultMessageModel().SetConn(s.conn).IsActivityExist(values.Get("activity_id"), values.Get("id")) {
+			return errors.New("該活動已設置過訊息牆的基礎設定")
+		}
+
 		second, _ := strconv.Atoi(values.Get("refresh_second"))
 		messageModel := models.GetMessageModelAndID("activity_set_message", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
-			_, err := messageModel.SetTx(tx).UpdateActivityMessage(values.Get("activity_id"),
+			_, err := messageModel.SetTx(tx).UpdateMessage(values.Get("activity_id"),
 				values.Get("picture_message"), values.Get("picture_auto"),
 				values.Get("prevent_status_update"), values.Get("message"), second)
 			if err != nil {

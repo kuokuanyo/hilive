@@ -45,7 +45,7 @@ func (m Sign3DModel) SetTx(tx *dbsql.Tx) Sign3DModel {
 // Add3DSign 增加3D簽到牆資料
 func (m Sign3DModel) Add3DSign(activityid, shape, display, background string) (Sign3DModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -67,15 +67,14 @@ func (m Sign3DModel) Add3DSign(activityid, shape, display, background string) (S
 
 // Update3DSign 更新3D簽到牆資料
 func (m Sign3DModel) Update3DSign(activityid, shape, display, background string) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
-	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
 
 	fieldValues := sql.Value{
+		"activity_id":  activityid,
 		"avatar_shape": shape,
 		"display":      display,
 		"background":   background,

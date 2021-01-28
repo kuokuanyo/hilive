@@ -45,7 +45,7 @@ func (m CountdownModel) SetTx(tx *dbsql.Tx) CountdownModel {
 // AddCountdown 增加倒數計時資料
 func (m CountdownModel) AddCountdown(activityid, url, shape string, second int) (CountdownModel, error) {
 	// 檢查是否有該活動
-	_, err := m.SetTx(m.Base.Tx).Table("activity").Select("id").Where("activity_id", "=", activityid).First()
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
 		return m, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
@@ -67,15 +67,13 @@ func (m CountdownModel) AddCountdown(activityid, url, shape string, second int) 
 
 // UpdateCountdown 更新倒數計時資料
 func (m CountdownModel) UpdateCountdown(activityid, url, shape string, second int) (int64, error) {
-	model, err := m.SetTx(m.Base.Tx).Table(m.Base.TableName).Where("id", "=", m.ID).First()
+	// 檢查是否有該活動
+	_, err := m.SetTx(m.Base.Tx).Table("activity").Where("activity_id", "=", activityid).First()
 	if err != nil {
-		return 0, errors.New("查詢不到此活動")
+		return 0, errors.New("查詢不到此活動ID，請輸入正確活動ID")
 	}
-	if model["activity_id"] != activityid {
-		return 0, errors.New("資料中的活動ID不符合，無法更新資料")
-	}
-
 	fieldValues := sql.Value{
+		"activity_id":  activityid,
 		"second":       second,
 		"index_url":    url,
 		"avatar_shape": shape,

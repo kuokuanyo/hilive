@@ -73,7 +73,7 @@ func (s *SystemTable) GetSchedulePanel(ctx *context.Context) (scheduleTable Tabl
 
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 新增活動資料
-			_, err := models.DefaultScheduleModel().SetTx(tx).SetConn(s.conn).AddActivitySchedule(
+			_, err := models.DefaultScheduleModel().SetTx(tx).SetConn(s.conn).AddSchedule(
 				values.Get("activity_id"), values.Get("schedule_name"), values.Get("schedule_content"),
 				values.Get("start_time"), values.Get("end_time"))
 			if err != nil {
@@ -103,7 +103,7 @@ func (s *SystemTable) GetSchedulePanel(ctx *context.Context) (scheduleTable Tabl
 		scheduleModel := models.GetScheduleModelAndID("activity_schedule", values.Get("id")).SetConn(s.conn)
 		_, txErr := s.connection().WithTransaction(func(tx *sql.Tx) (e error, i map[string]interface{}) {
 			// 更新活動行程資料
-			_, err := scheduleModel.SetTx(tx).UpdateActivitySchedule(values.Get("activity_id"), values.Get("schedule_name"),
+			_, err := scheduleModel.SetTx(tx).UpdateSchedule(values.Get("activity_id"), values.Get("schedule_name"),
 				values.Get("schedule_content"), values.Get("start_time"), values.Get("end_time"))
 			if err != nil {
 				if err.Error() != "沒有影響任何資料" {
